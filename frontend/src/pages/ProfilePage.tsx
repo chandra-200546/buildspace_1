@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Avatar } from "../components/common/Avatar";
 import { EmptyState } from "../components/common/EmptyState";
 import { FeedCard } from "../components/feed/FeedCard";
+import { PostComposer } from "../components/feed/PostComposer";
 import { getFeed, getProfile } from "../services/api";
 import { useSession } from "../hooks/useSession";
 
@@ -19,13 +20,18 @@ export function ProfilePage() {
     setProfile(data);
   }
 
+  async function refreshHomeFeed() {
+    const items = await getFeed("latest", 1, 20);
+    setHomePosts(items);
+  }
+
   useEffect(() => {
     if (!username) return;
     loadProfile().catch(() => setProfile(null));
   }, [username]);
 
   useEffect(() => {
-    getFeed("latest", 1, 20).then(setHomePosts).catch(() => setHomePosts([]));
+    refreshHomeFeed().catch(() => setHomePosts([]));
   }, []);
 
   if (!username) {
@@ -38,6 +44,16 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-4">
+      <section className="panel p-4">
+        <h3 className="mb-3 text-sm font-semibold">Create Post</h3>
+        <PostComposer
+          onCreated={() => {
+            loadProfile().catch(() => undefined);
+            refreshHomeFeed().catch(() => undefined);
+          }}
+        />
+      </section>
+
       <section className="panel p-4">
         <div className="h-28 rounded-2xl bg-gradient-to-r from-cyan-900/40 via-zinc-900 to-emerald-900/40" />
         <div className="-mt-10 flex items-end justify-between gap-3 px-2">
@@ -100,7 +116,7 @@ export function ProfilePage() {
             <EmptyState title="No posts in home feed" description="Everyone's posts will appear here." />
           )}
           {activeTab === "home" && homePosts.map((post: any) => (
-            <FeedCard key={post.id} post={post} onAction={() => getFeed("latest", 1, 20).then(setHomePosts).catch(() => undefined)} />
+            <FeedCard key={post.id} post={post} onAction={() => refreshHomeFeed().catch(() => undefined)} />
           ))}
         </div>
       </section>
