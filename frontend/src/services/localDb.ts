@@ -251,6 +251,15 @@ function normalizeHashtag(value: string) {
   return cleaned.startsWith("#") ? cleaned : `#${cleaned}`;
 }
 
+function normalizeUsername(value: string) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isUsernameTaken(db: LocalDb, username: string, excludeUserId?: string) {
+  const target = normalizeUsername(username);
+  return db.users.some((entry) => normalizeUsername(entry.username) === target && entry.id !== excludeUserId);
+}
+
 function extractHashtagsFromText(text: string) {
   const matches = text.match(/#[a-zA-Z0-9_]+/g) ?? [];
   return matches.map((match) => normalizeHashtag(match)).filter(Boolean);
@@ -802,7 +811,8 @@ export const localDbApi = {
 
   getProfile(username: string) {
     const db = readDb();
-    const user = db.users.find((entry) => entry.username === username);
+    const normalizedUsername = normalizeUsername(username);
+    const user = db.users.find((entry) => normalizeUsername(entry.username) === normalizedUsername);
     if (!user) throw new Error("User not found");
     const session = getSessionUser();
     const viewerId = session?.id;
@@ -847,6 +857,12 @@ export const localDbApi = {
   updateProfile(payload: any) {
     const db = readDb();
     const user = requireSessionUser(db);
+    const nextUsername = payload.username !== undefined ? normalizeUsername(payload.username) : undefined;
+    if (nextUsername !== undefined) {
+      if (!nextUsername) throw new Error("Username is required");
+      if (isUsernameTaken(db, nextUsername, user.id)) throw new Error("Username already exists");
+      user.username = nextUsername;
+    }
 
     user.name = payload.name ?? user.name;
     user.image = payload.image ?? user.image;
@@ -996,16 +1012,18 @@ export const localDbApi = {
 
   register(payload: any) {
     const db = readDb();
-    if (db.users.some((entry) => entry.email === payload.email || entry.username === payload.username)) {
-      throw new Error("Email or username already exists");
-    }
+    const email = String(payload.email ?? "").trim().toLowerCase();
+    const username = normalizeUsername(payload.username);
+    if (!email || !username) throw new Error("Email and username are required");
+    if (db.users.some((entry) => String(entry.email).trim().toLowerCase() === email)) throw new Error("Email already exists");
+    if (isUsernameTaken(db, username)) throw new Error("Username already exists");
 
     const user: LocalUser = {
       id: id("u"),
-      email: payload.email,
+      email,
       password: payload.password,
       name: payload.name,
-      username: payload.username,
+      username,
       role: payload.role || "DEVELOPER",
       openToCollaborate: false,
       openToHire: false,
