@@ -1,6 +1,7 @@
-import { Bookmark, ExternalLink, GitFork, Heart, MessageCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bookmark, Bot, ExternalLink, Eye, GitFork, Heart, MessageCircle, ThumbsDown } from "lucide-react";
 import type { Post } from "../../types";
-import { bookmarkPost, likePost, repostPost } from "../../services/api";
+import { addCommentToPost, bookmarkPost, dislikePost, likePost, registerPostView, repostPost, runPostAiReview } from "../../services/api";
 import { Avatar } from "../common/Avatar";
 
 type Props = {
@@ -9,9 +10,40 @@ type Props = {
 };
 
 export function FeedCard({ post, onAction }: Props) {
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [viewCount, setViewCount] = useState(post.views ?? post._count.views ?? 0);
+  const [aiLoading, setAiLoading] = useState(false);
+  const countedViewRef = useRef(false);
+
+  useEffect(() => {
+    if (countedViewRef.current) return;
+    countedViewRef.current = true;
+    registerPostView(post.id)
+      .then(() => setViewCount((value) => value + 1))
+      .catch(() => undefined);
+  }, [post.id]);
+
   const action = async (fn: () => Promise<void>) => {
     await fn();
     onAction();
+  };
+
+  const submitComment = async () => {
+    if (!commentText.trim()) return;
+    await addCommentToPost(post.id, commentText.trim());
+    setCommentText("");
+    onAction();
+  };
+
+  const runAiReview = async () => {
+    setAiLoading(true);
+    try {
+      await runPostAiReview(post.id);
+      onAction();
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -64,21 +96,67 @@ export function FeedCard({ post, onAction }: Props) {
         </div>
       )}
 
+      {(typeof post.aiScore === "number" || post.aiReview) && (
+        <div className="mt-3 rounded-xl border border-emerald-900/60 bg-emerald-950/20 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">AI Review</p>
+            {typeof post.aiScore === "number" && <p className="text-xs text-emerald-200">AI Score: {post.aiScore}/100</p>}
+          </div>
+          {post.aiReview && <p className="mt-2 text-xs text-emerald-100">{post.aiReview}</p>}
+        </div>
+      )}
+
       <div className="mt-4 flex items-center gap-4 text-xs text-muted">
         <button className="flex items-center gap-1 hover:text-red-300" onClick={() => action(() => likePost(post.id))}>
           <Heart className="h-4 w-4" /> {post._count.likes}
         </button>
-        <span className="flex items-center gap-1">
+        <button className="flex items-center gap-1 hover:text-rose-200" onClick={() => action(() => dislikePost(post.id))}>
+          <ThumbsDown className="h-4 w-4" /> {post._count.dislikes ?? 0}
+        </button>
+        <button className="flex items-center gap-1 hover:text-zinc-100" onClick={() => setShowComments((value) => !value)}>
           <MessageCircle className="h-4 w-4" /> {post._count.comments}
-        </span>
+        </button>
         <button className="flex items-center gap-1 hover:text-cyan-300" onClick={() => action(() => repostPost(post.id))}>
           <GitFork className="h-4 w-4" /> {post._count.reposts}
         </button>
         <button className="flex items-center gap-1 hover:text-amber-300" onClick={() => action(() => bookmarkPost(post.id))}>
           <Bookmark className="h-4 w-4" /> {post._count.bookmarks}
         </button>
-        {(post.githubUrl || post.liveDemoUrl) && <ExternalLink className="ml-auto h-4 w-4" />}
+        <span className="flex items-center gap-1">
+          <Eye className="h-4 w-4" /> {viewCount}
+        </span>
+        <button className="ml-auto flex items-center gap-1 hover:text-emerald-300" onClick={runAiReview} disabled={aiLoading}>
+          <Bot className="h-4 w-4" /> {aiLoading ? "Reviewing..." : "AI Review"}
+        </button>
+        {(post.githubUrl || post.liveDemoUrl) && <ExternalLink className="h-4 w-4" />}
       </div>
+
+      {showComments && (
+        <div className="mt-4 space-y-3 rounded-xl border border-border/80 bg-zinc-950/50 p-3">
+          <div className="space-y-2">
+            {(post.comments ?? []).length === 0 && <p className="text-xs text-muted">No comments yet.</p>}
+            {(post.comments ?? []).map((comment) => (
+              <div key={comment.id} className="rounded-lg border border-border/70 p-2">
+                <p className="text-xs text-zinc-200">
+                  <span className="font-semibold">{comment.author.name}</span> <span className="text-muted">@{comment.author.username}</span>
+                </p>
+                <p className="mt-1 text-xs text-zinc-300">{comment.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              className="input h-9 py-1"
+              placeholder="Write a comment..."
+              value={commentText}
+              onChange={(event) => setCommentText(event.target.value)}
+            />
+            <button className="btn-secondary" onClick={submitComment}>
+              Comment
+            </button>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

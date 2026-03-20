@@ -33,6 +33,11 @@ export async function likePost(postId: string) {
   await api.post(`/api/feed/${postId}/like`);
 }
 
+export async function dislikePost(postId: string) {
+  if (useLocalDb) return localDbApi.dislikePost(postId);
+  await api.post(`/api/feed/${postId}/dislike`);
+}
+
 export async function bookmarkPost(postId: string) {
   if (useLocalDb) return localDbApi.bookmarkPost(postId);
   await api.post(`/api/feed/${postId}/bookmark`);
@@ -41,6 +46,23 @@ export async function bookmarkPost(postId: string) {
 export async function repostPost(postId: string) {
   if (useLocalDb) return localDbApi.repostPost(postId);
   await api.post(`/api/feed/${postId}/repost`);
+}
+
+export async function addCommentToPost(postId: string, text: string) {
+  if (useLocalDb) return localDbApi.addComment(postId, text);
+  const { data } = await api.post(`/api/feed/${postId}/comment`, { text });
+  return data;
+}
+
+export async function registerPostView(postId: string) {
+  if (useLocalDb) return localDbApi.registerView(postId);
+  await api.post(`/api/feed/${postId}/view`);
+}
+
+export async function runPostAiReview(postId: string) {
+  if (useLocalDb) return localDbApi.runPostAIReview(postId);
+  const { data } = await api.post(`/api/feed/${postId}/ai-review`);
+  return data;
 }
 
 export async function getRightRail() {

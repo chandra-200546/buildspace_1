@@ -58,14 +58,25 @@ export type Post = {
   hashtags?: string[];
   matchedAudienceCount?: number;
   matchedAudienceUsernames?: string[];
+  aiReview?: string;
+  aiScore?: number;
+  views?: number;
+  comments?: Array<{
+    id: string;
+    text: string;
+    createdAt: string;
+    author: UserLite;
+  }>;
   createdAt: string;
   author: UserLite;
   project?: Pick<Project, "id" | "title" | "slug" | "status" | "tags" | "score">;
   _count: {
     likes: number;
+    dislikes?: number;
     comments: number;
     reposts: number;
     bookmarks: number;
+    views?: number;
   };
 };
 

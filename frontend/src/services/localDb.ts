@@ -48,8 +48,12 @@ type LocalPost = {
   lookingForFeedback: boolean;
   lookingForCollaborators: boolean;
   hashtags: string[];
+  aiReview?: string;
+  aiScore?: number;
   createdAt: string;
+  views: number;
   likes: string[];
+  dislikes: string[];
   bookmarks: string[];
   comments: Array<{ id: string; authorId: string; text: string; createdAt: string }>;
   reposts: number;
@@ -204,6 +208,24 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
   if (!author) throw new Error("Post author not found");
   const project = post.projectId ? db.projects.find((entry) => entry.id === post.projectId) : undefined;
 
+  const mappedComments = (post.comments ?? [])
+    .map((comment) => {
+      const commentAuthor = withUser(comment.authorId, db);
+      if (!commentAuthor) return null;
+      return {
+        id: comment.id,
+        text: comment.text,
+        createdAt: comment.createdAt,
+        author: {
+          id: commentAuthor.id,
+          name: commentAuthor.name,
+          username: commentAuthor.username,
+          image: commentAuthor.image
+        }
+      };
+    })
+    .filter(Boolean) as Post["comments"];
+
   return {
     id: post.id,
     text: post.text,
@@ -218,6 +240,10 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
     lookingForCollaborators: post.lookingForCollaborators,
     hashtags: post.hashtags ?? [],
     ...computeAudienceMatch(post.hashtags ?? [], post.authorId, db),
+    aiReview: post.aiReview,
+    aiScore: post.aiScore,
+    views: post.views ?? 0,
+    comments: mappedComments,
     createdAt: post.createdAt,
     author: { id: author.id, name: author.name, username: author.username, image: author.image },
     project: project
@@ -232,9 +258,11 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
       : undefined,
     _count: {
       likes: post.likes.length,
-      comments: post.comments.length,
+      dislikes: (post.dislikes ?? []).length,
+      comments: (post.comments ?? []).length,
       reposts: post.reposts,
-      bookmarks: post.bookmarks.length
+      bookmarks: post.bookmarks.length,
+      views: post.views ?? 0
     }
   };
 }
@@ -294,8 +322,12 @@ export const localDbApi = {
       lookingForFeedback: Boolean(payload.lookingForFeedback),
       lookingForCollaborators: Boolean(payload.lookingForCollaborators),
       hashtags,
+      aiReview: undefined,
+      aiScore: undefined,
       createdAt: nowIso(),
+      views: 0,
       likes: [],
+      dislikes: [],
       bookmarks: [],
       comments: [],
       reposts: 0
@@ -311,7 +343,25 @@ export const localDbApi = {
     const db = readDb();
     const user = requireSessionUser(db);
     const post = db.posts.find((entry) => entry.id === postId);
-    if (post && !post.likes.includes(user.id)) post.likes.push(user.id);
+    if (post && !post.likes.includes(user.id)) {
+      post.dislikes = post.dislikes ?? [];
+      post.likes.push(user.id);
+      post.dislikes = (post.dislikes ?? []).filter((entry) => entry !== user.id);
+    }
+    writeDb(db);
+  },
+
+  dislikePost(postId: string) {
+    const db = readDb();
+    const user = requireSessionUser(db);
+    const post = db.posts.find((entry) => entry.id === postId);
+    if (post) {
+      post.dislikes = post.dislikes ?? [];
+    }
+    if (post && !post.dislikes.includes(user.id)) {
+      post.dislikes.push(user.id);
+      post.likes = post.likes.filter((entry) => entry !== user.id);
+    }
     writeDb(db);
   },
 
@@ -328,6 +378,52 @@ export const localDbApi = {
     const post = db.posts.find((entry) => entry.id === postId);
     if (post) post.reposts += 1;
     writeDb(db);
+  },
+
+  addComment(postId: string, text: string) {
+    const db = readDb();
+    const user = requireSessionUser(db);
+    const post = db.posts.find((entry) => entry.id === postId);
+    if (!post) throw new Error("Post not found");
+    post.comments.unshift({
+      id: id("c"),
+      authorId: user.id,
+      text,
+      createdAt: nowIso()
+    });
+    writeDb(db);
+    return mapPost(post, db);
+  },
+
+  registerView(postId: string) {
+    const db = readDb();
+    const post = db.posts.find((entry) => entry.id === postId);
+    if (!post) return;
+    post.views = (post.views ?? 0) + 1;
+    writeDb(db);
+  },
+
+  runPostAIReview(postId: string) {
+    const db = readDb();
+    const post = db.posts.find((entry) => entry.id === postId);
+    if (!post) throw new Error("Post not found");
+
+    const hashtagBonus = (post.hashtags ?? []).length * 4;
+    const techBonus = (post.techStack ?? []).length * 3;
+    const textBonus = Math.min(25, Math.floor((post.text?.length ?? 0) / 12));
+    const interactionBonus = Math.min(20, post.likes.length + (post.comments?.length ?? 0));
+    const aiScore = Math.min(100, 35 + hashtagBonus + techBonus + textBonus + interactionBonus);
+
+    post.aiScore = aiScore;
+    post.aiReview =
+      aiScore >= 80
+        ? "High signal post. Strong clarity, relevant tags, and good engagement potential."
+        : aiScore >= 60
+          ? "Good post. Improve with more concrete progress metrics and sharper hashtags."
+          : "Low signal. Add specific outcomes, stack context, and focused hashtags to improve reach.";
+
+    writeDb(db);
+    return mapPost(post, db);
   },
 
   getRightRail(): RightRail {
