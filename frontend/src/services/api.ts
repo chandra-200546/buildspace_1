@@ -1,0 +1,159 @@
+import axios from "axios";
+import type { AIReview, Challenge, MentorChat, Notification, Post, Project, RightRail } from "../types";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000"
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("buildspace_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export async function getFeed(filter: string, page = 1, limit = 10) {
+  const { data } = await api.get<{ items: Post[] }>(`/api/feed?filter=${filter}&page=${page}&limit=${limit}`);
+  return data.items;
+}
+
+export async function createPost(payload: Record<string, unknown>) {
+  const { data } = await api.post<Post>("/api/feed", payload);
+  return data;
+}
+
+export async function likePost(postId: string) {
+  await api.post(`/api/feed/${postId}/like`);
+}
+
+export async function bookmarkPost(postId: string) {
+  await api.post(`/api/feed/${postId}/bookmark`);
+}
+
+export async function repostPost(postId: string) {
+  await api.post(`/api/feed/${postId}/repost`);
+}
+
+export async function getRightRail() {
+  const { data } = await api.get<RightRail>("/api/meta/right-rail");
+  return data;
+}
+
+export async function getProjects() {
+  const { data } = await api.get<Project[]>("/api/projects");
+  return data;
+}
+
+export async function getProject(slug: string) {
+  const { data } = await api.get<Project & { posts: Post[]; aiReviews: AIReview[] }>(`/api/projects/${slug}`);
+  return data;
+}
+
+export async function getChallenges() {
+  const { data } = await api.get<Challenge[]>("/api/challenges");
+  return data;
+}
+
+export async function getMentorChats() {
+  const { data } = await api.get<MentorChat[]>("/api/ai/mentor");
+  return data;
+}
+
+export async function askMentor(prompt: string) {
+  const { data } = await api.post<MentorChat>("/api/ai/mentor", { prompt });
+  return data;
+}
+
+export async function runProjectReview(projectId: string, prompt: string) {
+  const { data } = await api.post<AIReview>("/api/ai/project-review", { projectId, prompt });
+  return data;
+}
+
+export async function getNotifications() {
+  const { data } = await api.get<Notification[]>("/api/notifications");
+  return data;
+}
+
+export async function getBookmarks(userId: string) {
+  const { data } = await api.get<Post[]>(`/api/meta/bookmarks?userId=${userId}`);
+  return data;
+}
+
+export async function searchAll(q: string) {
+  const { data } = await api.get(`/api/search?q=${encodeURIComponent(q)}`);
+  return data;
+}
+
+export async function getProfile(username: string) {
+  const { data } = await api.get(`/api/profiles/${username}`);
+  return data;
+}
+
+export async function updateProfile(payload: Record<string, unknown>) {
+  const { data } = await api.patch("/api/profiles/me", payload);
+  return data;
+}
+
+export async function getRecruiterDashboard() {
+  const { data } = await api.get("/api/recruiter/dashboard");
+  return data;
+}
+
+export async function searchTalent(params: { skill?: string; tag?: string; category?: string; openToHire?: boolean }) {
+  const query = new URLSearchParams();
+  if (params.skill) query.append("skill", params.skill);
+  if (params.tag) query.append("tag", params.tag);
+  if (params.category) query.append("category", params.category);
+  if (params.openToHire) query.append("openToHire", "true");
+
+  const { data } = await api.get(`/api/recruiter/search?${query.toString()}`);
+  return data;
+}
+
+export async function shortlistTalent(userId: string, note?: string) {
+  const { data } = await api.post("/api/recruiter/shortlist", { userId, note });
+  return data;
+}
+
+export async function getCollabOpportunities() {
+  const { data } = await api.get("/api/collaboration/opportunities");
+  return data;
+}
+
+export async function sendCollabRequest(payload: Record<string, unknown>) {
+  const { data } = await api.post("/api/collaboration/request", payload);
+  return data;
+}
+
+export async function getMyCollabRequests() {
+  const { data } = await api.get("/api/collaboration/my-requests");
+  return data;
+}
+
+export async function login(email: string, password: string) {
+  const { data } = await api.post("/api/auth/login", { email, password });
+  return data;
+}
+
+export async function register(payload: Record<string, unknown>) {
+  const { data } = await api.post("/api/auth/register", payload);
+  return data;
+}
+
+export async function submitChallenge(challengeId: string, projectId: string, note: string) {
+  const { data } = await api.post(`/api/challenges/${challengeId}/submit`, { projectId, note });
+  return data;
+}
+
+export async function createProject(payload: Record<string, unknown>) {
+  const { data } = await api.post("/api/projects", payload);
+  return data;
+}
+
+export async function createProjectUpdate(projectId: string, payload: Record<string, unknown>) {
+  const { data } = await api.post(`/api/projects/${projectId}/updates`, payload);
+  return data;
+}
+
+export default api;
