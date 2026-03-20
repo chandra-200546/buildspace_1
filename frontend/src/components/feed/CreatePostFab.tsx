@@ -25,6 +25,7 @@ export function CreatePostFab() {
   const [hashtags, setHashtags] = useState("");
   const [media, setMedia] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const reset = () => {
@@ -36,8 +37,13 @@ export function CreatePostFab() {
   };
 
   const submit = async () => {
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      setError("Post text is required.");
+      return;
+    }
+
     setLoading(true);
+    setError("");
     try {
       await createPost({
         text,
@@ -57,6 +63,15 @@ export function CreatePostFab() {
       setOpen(false);
       reset();
       navigate("/profile");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to create post.";
+      if (message.toLowerCase().includes("login")) {
+        setError("Please login first, then try posting again.");
+      } else if (message.toLowerCase().includes("quota")) {
+        setError("Media is too large for local storage. Try fewer/smaller files.");
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -85,7 +100,10 @@ export function CreatePostFab() {
             <textarea
               className="input min-h-28 resize-none"
               value={text}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => {
+                setText(event.target.value);
+                if (error) setError("");
+              }}
               placeholder="What are you building?"
             />
             <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -119,6 +137,7 @@ export function CreatePostFab() {
                 onChange={async (event) => {
                   const dataUrls = await filesToDataUrls(event.target.files);
                   setMedia(dataUrls.slice(0, 6));
+                  if (error) setError("");
                 }}
               />
               {media.length > 0 && (
@@ -136,8 +155,10 @@ export function CreatePostFab() {
               )}
             </div>
 
+            {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+
             <div className="mt-4 flex justify-end">
-              <button onClick={submit} disabled={loading} className="btn-primary disabled:opacity-70">
+              <button onClick={submit} disabled={loading || !text.trim()} className="btn-primary disabled:opacity-70">
                 {loading ? "Posting..." : "Post"}
               </button>
             </div>
