@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cmd /c \"npm run prisma:generate && npm run build && node dist/src/server.js\"",
+    "dev": "cmd /c \"npm run build && node dist/src/server.js\"",
+    "setup": "cmd /c \"npm run prisma:generate && npm run prisma:push && npm run prisma:seed\"",
     "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",

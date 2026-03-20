@@ -53,6 +53,13 @@ npm run prisma:seed
 npm run dev
 ```
 
+Or one-time setup:
+
+```bash
+npm run setup
+npm run dev
+```
+
 Backend runs on `http://localhost:4000`.
 
 ## 2) Frontend Setup
