@@ -1,11 +1,19 @@
 import { Router } from "express";
-import slugify from "slugify";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { generateProjectScore } from "../services/scoring.js";
 
 const router = Router();
+
+function toSlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
 
 router.get("/", async (_req, res) => {
   const projects = await prisma.project.findMany({
@@ -64,7 +72,7 @@ router.post("/", requireAuth, async (req, res) => {
     })
     .parse(req.body);
 
-  const slug = slugify(input.title, { lower: true, strict: true }) + `-${Date.now().toString().slice(-4)}`;
+  const slug = toSlug(input.title) + `-${Date.now().toString().slice(-4)}`;
 
   const project = await prisma.project.create({
     data: {

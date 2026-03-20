@@ -33,7 +33,7 @@ router.get("/bookmarks", async (req, res) => {
     orderBy: { createdAt: "desc" }
   });
 
-  res.json(bookmarks.map((b) => b.post));
+  res.json(bookmarks.map((bookmark: any) => bookmark.post));
 });
 
 export default router;
