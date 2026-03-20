@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Avatar } from "../components/common/Avatar";
 import { EmptyState } from "../components/common/EmptyState";
-import { PageTitle } from "../components/common/PageTitle";
 import { getProfile } from "../services/api";
 import { useSession } from "../hooks/useSession";
 
@@ -25,10 +25,19 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-4">
-      <PageTitle title={profile.name} subtitle={`@${profile.username}`} />
-
       <section className="panel p-4">
-        <p className="text-sm text-zinc-200">{profile.profile?.bio}</p>
+        <div className="h-28 rounded-2xl bg-gradient-to-r from-cyan-900/40 via-zinc-900 to-emerald-900/40" />
+        <div className="-mt-10 flex items-end justify-between gap-3 px-2">
+          <Avatar name={profile.name} image={profile.image} size="xl" />
+          <Link to="/profile/edit" className="btn-secondary">
+            Edit Profile
+          </Link>
+        </div>
+        <div className="mt-3 px-2">
+          <p className="text-xl font-semibold">{profile.name}</p>
+          <p className="text-sm text-muted">@{profile.username}</p>
+          <p className="mt-3 text-sm text-zinc-200">{profile.profile?.bio || "No bio yet."}</p>
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {(profile.profile?.skills ?? []).map((skill: string) => (
             <span key={skill} className="rounded-full border border-border px-3 py-1 text-xs text-muted">{skill}</span>
@@ -47,9 +56,6 @@ export function ProfilePage() {
             <p className="text-muted">Streak</p>
             <p className="mt-1 text-xl font-semibold">{profile.profile?.streakDays ?? 0}</p>
           </div>
-        </div>
-        <div className="mt-4">
-          <Link to="/profile/edit" className="btn-secondary">Edit Profile</Link>
         </div>
       </section>
 

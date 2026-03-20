@@ -1,6 +1,7 @@
 import { Bookmark, ExternalLink, GitFork, Heart, MessageCircle } from "lucide-react";
 import type { Post } from "../../types";
 import { bookmarkPost, likePost, repostPost } from "../../services/api";
+import { Avatar } from "../common/Avatar";
 
 type Props = {
   post: Post;
@@ -16,9 +17,12 @@ export function FeedCard({ post, onAction }: Props) {
   return (
     <article className="panel p-4 transition hover:border-zinc-700">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold">{post.author.name}</p>
-          <p className="text-xs text-muted">@{post.author.username}</p>
+        <div className="flex items-center gap-3">
+          <Avatar name={post.author.name} image={post.author.image} size="md" />
+          <div>
+            <p className="text-sm font-semibold">{post.author.name}</p>
+            <p className="text-xs text-muted">@{post.author.username}</p>
+          </div>
         </div>
         <span className="rounded-full border border-border px-2 py-1 text-[10px] uppercase tracking-wide text-accent">
           {post.type.replace("_", " ")}
