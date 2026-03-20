@@ -385,6 +385,18 @@ function mapProject(project: LocalProject, db: LocalDb): any {
   };
 }
 
+function safeMapProject(project: LocalProject, db: LocalDb): any | null {
+  try {
+    return mapProject(project, db);
+  } catch {
+    return null;
+  }
+}
+
+function mapProjectsSafely(projects: LocalProject[], db: LocalDb) {
+  return projects.map((entry) => safeMapProject(entry, db)).filter(Boolean);
+}
+
 function upsertTag(db: LocalDb, value: string) {
   const normalized = value.startsWith("#") ? value : `#${value.toLowerCase()}`;
   const existing = db.tags.find((tag) => tag.label === normalized);
@@ -657,22 +669,24 @@ export const localDbApi = {
           image: entry.image,
           profile: { skills: entry.profile.skills }
         })),
-      featuredProjects: [...db.projects].slice(0, 4).map((entry) => mapProject(entry, db)),
+      featuredProjects: mapProjectsSafely([...db.projects].slice(0, 4), db),
       activeChallenges: db.challenges.filter((entry) => entry.isActive).map((entry) => ({ ...entry, submissions: [] as any[] })) as Challenge[]
     };
   },
 
   getProjects() {
     const db = readDb();
-    return db.projects.map((entry) => mapProject(entry, db));
+    return mapProjectsSafely(db.projects, db);
   },
 
   getProject(slug: string) {
     const db = readDb();
     const project = db.projects.find((entry) => entry.slug === slug);
     if (!project) throw new Error("Project not found");
+    const mappedProject = safeMapProject(project, db);
+    if (!mappedProject) throw new Error("Project data is invalid");
     const relatedPosts = db.posts.filter((entry) => entry.projectId === project.id).map((entry) => mapPost(entry, db));
-    return { ...mapProject(project, db), posts: relatedPosts, aiReviews: project.aiReviews || [] };
+    return { ...mappedProject, posts: relatedPosts, aiReviews: project.aiReviews || [] };
   },
 
   getChallenges() {
@@ -775,7 +789,10 @@ export const localDbApi = {
     const db = readDb();
     const q = query.toLowerCase();
     return {
-      projects: db.projects.filter((entry) => entry.title.toLowerCase().includes(q) || entry.tags.some((tag) => tag.toLowerCase().includes(q))).map((entry) => mapProject(entry, db)),
+      projects: mapProjectsSafely(
+        db.projects.filter((entry) => entry.title.toLowerCase().includes(q) || entry.tags.some((tag) => tag.toLowerCase().includes(q))),
+        db
+      ),
       users: db.users.filter((entry) => entry.name.toLowerCase().includes(q) || entry.username.toLowerCase().includes(q)),
       posts: db.posts
         .filter((entry) => entry.text.toLowerCase().includes(q) || (entry.hashtags ?? []).some((tag) => tag.toLowerCase().includes(q)))
@@ -794,12 +811,17 @@ export const localDbApi = {
     const viewerFollowing = Boolean(viewerId && db.follows.some((entry) => entry.followerId === viewerId && entry.followingId === user.id));
     const followsViewer = Boolean(viewerId && db.follows.some((entry) => entry.followerId === user.id && entry.followingId === viewerId));
 
-    const ownedProjects = db.projects.filter((entry) => entry.ownerId === user.id).map((entry) => mapProject(entry, db));
+    const ownedProjects = mapProjectsSafely(
+      db.projects.filter((entry) => entry.ownerId === user.id),
+      db
+    );
     const posts = db.posts.filter((entry) => entry.authorId === user.id).map((entry) => mapPost(entry, db));
     const pinnedProjects = user.pinnedProjectIds
       .map((projectId) => db.projects.find((entry) => entry.id === projectId))
       .filter(Boolean)
-      .map((entry: any, idx) => ({ id: id("pin"), order: idx + 1, project: mapProject(entry, db) }));
+      .map((entry: any) => safeMapProject(entry, db))
+      .filter(Boolean)
+      .map((project: any, idx) => ({ id: id("pin"), order: idx + 1, project }));
 
     return {
       id: user.id,
@@ -932,7 +954,10 @@ export const localDbApi = {
 
   getCollabOpportunities() {
     const db = readDb();
-    return db.projects.filter((entry) => entry.lookingForCollaborator).map((entry) => mapProject(entry, db));
+    return mapProjectsSafely(
+      db.projects.filter((entry) => entry.lookingForCollaborator),
+      db
+    );
   },
 
   sendCollabRequest(payload: any) {
