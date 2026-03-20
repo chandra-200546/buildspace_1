@@ -145,4 +145,6 @@ export type Notification = {
   isRead: boolean;
   createdAt: string;
   type: string;
+  actorUsername?: string;
+  link?: string;
 };

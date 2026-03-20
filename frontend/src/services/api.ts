@@ -113,6 +113,18 @@ export async function getNotifications() {
   return data;
 }
 
+export async function markNotificationAsRead(notificationId: string) {
+  if (useLocalDb) return localDbApi.markNotificationAsRead(notificationId);
+  const { data } = await api.patch(`/api/notifications/${notificationId}/read`);
+  return data;
+}
+
+export async function markAllNotificationsAsRead() {
+  if (useLocalDb) return localDbApi.markAllNotificationsAsRead();
+  const { data } = await api.patch("/api/notifications/read-all");
+  return data;
+}
+
 export async function getBookmarks(userId: string) {
   if (useLocalDb) return localDbApi.getBookmarks(userId);
   const { data } = await api.get<Post[]>(`/api/meta/bookmarks?userId=${userId}`);

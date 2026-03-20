@@ -80,7 +80,14 @@ type LocalDb = {
   projects: LocalProject[];
   challenges: LocalChallenge[];
   mentorChats: MentorChat[];
-  notifications: Notification[];
+  notifications: Array<
+    Notification & {
+      userId: string;
+      actorId?: string;
+      entityId?: string;
+      dedupeKey?: string;
+    }
+  >;
   collabRequests: any[];
   tags: Array<{ id: string; label: string; usage: number }>;
 };
@@ -228,6 +235,10 @@ function readDb() {
 
 function writeDb(db: LocalDb) {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+function emitNotificationsChanged() {
+  window.dispatchEvent(new Event("buildspace:notifications-changed"));
 }
 
 function withUser(userId: string, db: LocalDb) {
@@ -384,6 +395,51 @@ function upsertTag(db: LocalDb, value: string) {
   }
 }
 
+function addNotification(
+  db: LocalDb,
+  params: {
+    userId: string;
+    actorId?: string;
+    type: string;
+    title: string;
+    message: string;
+    link?: string;
+    entityId?: string;
+    dedupeKey?: string;
+  }
+) {
+  if (params.actorId && params.actorId === params.userId) return;
+
+  const actor = params.actorId ? db.users.find((entry) => entry.id === params.actorId) : undefined;
+  if (params.dedupeKey) {
+    const existing = db.notifications.find((entry) => entry.userId === params.userId && entry.dedupeKey === params.dedupeKey);
+    if (existing) {
+      existing.createdAt = nowIso();
+      existing.isRead = false;
+      existing.message = params.message;
+      existing.title = params.title;
+      existing.actorUsername = actor?.username;
+      existing.link = params.link;
+      return;
+    }
+  }
+
+  db.notifications.unshift({
+    id: id("n"),
+    userId: params.userId,
+    actorId: params.actorId,
+    entityId: params.entityId,
+    dedupeKey: params.dedupeKey,
+    type: params.type,
+    title: params.title,
+    message: params.message,
+    actorUsername: actor?.username,
+    link: params.link,
+    isRead: false,
+    createdAt: nowIso()
+  });
+}
+
 export const localDbApi = {
   getFeed(filter: string, page = 1, limit = 10) {
     const db = readDb();
@@ -444,8 +500,19 @@ export const localDbApi = {
       post.dislikes = post.dislikes ?? [];
       post.likes.push(user.id);
       post.dislikes = (post.dislikes ?? []).filter((entry) => entry !== user.id);
+      addNotification(db, {
+        userId: post.authorId,
+        actorId: user.id,
+        type: "LIKE",
+        title: "New like",
+        message: `${user.name} liked your post.`,
+        link: `/profile/${user.username}`,
+        entityId: post.id,
+        dedupeKey: `like:${post.id}:${user.id}`
+      });
     }
     writeDb(db);
+    emitNotificationsChanged();
   },
 
   dislikePost(postId: string) {
@@ -466,8 +533,21 @@ export const localDbApi = {
     const db = readDb();
     const user = requireSessionUser(db);
     const post = db.posts.find((entry) => entry.id === postId);
-    if (post && !post.bookmarks.includes(user.id)) post.bookmarks.push(user.id);
+    if (post && !post.bookmarks.includes(user.id)) {
+      post.bookmarks.push(user.id);
+      addNotification(db, {
+        userId: post.authorId,
+        actorId: user.id,
+        type: "BOOKMARK",
+        title: "Post bookmarked",
+        message: `${user.name} bookmarked your post.`,
+        link: `/profile/${user.username}`,
+        entityId: post.id,
+        dedupeKey: `bookmark:${post.id}:${user.id}`
+      });
+    }
     writeDb(db);
+    emitNotificationsChanged();
   },
 
   repostPost(postId: string) {
@@ -478,10 +558,21 @@ export const localDbApi = {
       post.repostedBy = post.repostedBy ?? [];
       if (!post.repostedBy.includes(user.id)) {
         post.repostedBy.push(user.id);
+        addNotification(db, {
+          userId: post.authorId,
+          actorId: user.id,
+          type: "REPOST",
+          title: "New repost",
+          message: `${user.name} reposted your post.`,
+          link: `/profile/${user.username}`,
+          entityId: post.id,
+          dedupeKey: `repost:${post.id}:${user.id}`
+        });
       }
       post.reposts = post.repostedBy.length;
     }
     writeDb(db);
+    emitNotificationsChanged();
   },
 
   addComment(postId: string, text: string) {
@@ -495,7 +586,17 @@ export const localDbApi = {
       text,
       createdAt: nowIso()
     });
+    addNotification(db, {
+      userId: post.authorId,
+      actorId: user.id,
+      type: "COMMENT",
+      title: "New comment",
+      message: `${user.name} commented on your post.`,
+      link: `/profile/${user.username}`,
+      entityId: post.id
+    });
     writeDb(db);
+    emitNotificationsChanged();
     return mapPost(post, db);
   },
 
@@ -509,6 +610,7 @@ export const localDbApi = {
 
   runPostAIReview(postId: string) {
     const db = readDb();
+    const user = requireSessionUser(db);
     const post = db.posts.find((entry) => entry.id === postId);
     if (!post) throw new Error("Post not found");
 
@@ -526,7 +628,18 @@ export const localDbApi = {
           ? "Good post. Improve with more concrete progress metrics and sharper hashtags."
           : "Low signal. Add specific outcomes, stack context, and focused hashtags to improve reach.";
 
+    addNotification(db, {
+      userId: post.authorId,
+      actorId: user.id,
+      type: "AI_REVIEW",
+      title: "AI review generated",
+      message: `${user.name} generated an AI review on your post.`,
+      link: `/profile/${user.username}`,
+      entityId: post.id
+    });
+
     writeDb(db);
+    emitNotificationsChanged();
     return mapPost(post, db);
   },
 
@@ -625,7 +738,32 @@ export const localDbApi = {
     const db = readDb();
     const user = getSessionUser();
     if (!user?.id) return [];
-    return db.notifications.filter((entry: any) => !entry.userId || entry.userId === user.id);
+    return db.notifications
+      .filter((entry: any) => !entry.userId || entry.userId === user.id)
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  },
+
+  markNotificationAsRead(notificationId: string) {
+    const db = readDb();
+    const user = requireSessionUser(db);
+    const notification = db.notifications.find((entry) => entry.id === notificationId && entry.userId === user.id);
+    if (notification) {
+      notification.isRead = true;
+      writeDb(db);
+      emitNotificationsChanged();
+    }
+    return { ok: true };
+  },
+
+  markAllNotificationsAsRead() {
+    const db = readDb();
+    const user = requireSessionUser(db);
+    db.notifications.forEach((entry) => {
+      if (entry.userId === user.id) entry.isRead = true;
+    });
+    writeDb(db);
+    emitNotificationsChanged();
+    return { ok: true };
   },
 
   getBookmarks(userId: string) {
@@ -717,7 +855,18 @@ export const localDbApi = {
     const exists = db.follows.some((entry) => entry.followerId === user.id && entry.followingId === targetUserId);
     if (!exists) {
       db.follows.push({ id: id("f"), followerId: user.id, followingId: targetUserId });
+      addNotification(db, {
+        userId: targetUserId,
+        actorId: user.id,
+        type: "FOLLOW",
+        title: "New follower",
+        message: `${user.name} followed you.`,
+        link: `/profile/${user.username}`,
+        entityId: targetUserId,
+        dedupeKey: `follow:${targetUserId}:${user.id}`
+      });
       writeDb(db);
+      emitNotificationsChanged();
     }
     return { ok: true };
   },
