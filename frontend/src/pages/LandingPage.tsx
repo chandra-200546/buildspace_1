@@ -14,7 +14,7 @@ export function LandingPage() {
         Build in public, get AI feedback, attract collaborators, and get discovered by recruiters through real projects.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link to="/auth" className="btn-primary">Get Started</Link>
+        <Link to="/auth" className="btn-primary">Get Started (Login / Sign up)</Link>
         <Link to="/home" className="btn-secondary">View Demo Feed</Link>
       </div>
     </div>

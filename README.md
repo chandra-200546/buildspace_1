@@ -73,6 +73,12 @@ npm run dev
 
 Frontend runs on `http://localhost:5173`.
 
+### Local Database Mode (default)
+
+- `VITE_USE_LOCAL_DB=true` stores app data in browser `localStorage` (users, projects, posts, auth, challenges, mentor chat).
+- This mode does not require backend to run for login/signup and core flows.
+- To reset local data, clear site storage in browser devtools.
+
 ## Demo Login (after seeding)
 
 - Developer: `alex@buildspace.ai` / `password123`
