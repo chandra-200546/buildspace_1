@@ -51,6 +51,8 @@ export function FeedCard({ post, onAction }: Props) {
     }
   };
 
+  const mediaItems = (post.media ?? []).slice(0, 4);
+
   return (
     <article className="panel p-4 transition hover:border-zinc-700">
       <div className="flex items-start justify-between gap-2">
@@ -68,14 +70,14 @@ export function FeedCard({ post, onAction }: Props) {
 
       <p className="mt-3 text-sm leading-relaxed text-zinc-200">{post.text}</p>
 
-      {Boolean(post.media?.length) && (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {(post.media ?? []).slice(0, 4).map((item, index) => (
-            <div key={`${item.slice(0, 30)}-${index}`} className="overflow-hidden rounded-xl border border-border bg-zinc-900/70">
+      {Boolean(mediaItems.length) && (
+        <div className={`mt-3 grid gap-2 ${mediaItems.length === 1 ? "grid-cols-1" : "sm:grid-cols-2"}`}>
+          {mediaItems.map((item, index) => (
+            <div key={`${item.slice(0, 30)}-${index}`} className="rounded-xl border border-border bg-zinc-900/70 p-1">
               {isVideoMedia(item) ? (
-                <video src={item} controls className="h-52 w-full object-cover" />
+                <video src={item} controls className="w-full max-h-[70vh] rounded-lg object-contain bg-black" />
               ) : (
-                <img src={item} alt={`post-media-${index + 1}`} className="h-52 w-full object-cover" />
+                <img src={item} alt={`post-media-${index + 1}`} className="w-full max-h-[70vh] rounded-lg object-contain bg-black" />
               )}
             </div>
           ))}
