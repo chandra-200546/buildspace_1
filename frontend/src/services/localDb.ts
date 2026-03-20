@@ -134,6 +134,85 @@ function createEmptyDb(): LocalDb {
   };
 }
 
+function ensureDbShape(input: any): LocalDb {
+  const users: LocalUser[] = Array.isArray(input?.users)
+    ? input.users.map((entry: any) => ({
+        id: String(entry?.id ?? id("u")),
+        email: String(entry?.email ?? ""),
+        password: String(entry?.password ?? ""),
+        name: String(entry?.name ?? ""),
+        username: String(entry?.username ?? ""),
+        role: (entry?.role ?? "DEVELOPER") as Role,
+        image: entry?.image,
+        coverImage: entry?.coverImage,
+        githubUsername: entry?.githubUsername,
+        portfolioUrl: entry?.portfolioUrl,
+        openToCollaborate: Boolean(entry?.openToCollaborate),
+        openToHire: Boolean(entry?.openToHire),
+        profile: {
+          bio: entry?.profile?.bio ?? "",
+          location: entry?.profile?.location ?? "",
+          skills: Array.isArray(entry?.profile?.skills) ? entry.profile.skills : [],
+          badges: Array.isArray(entry?.profile?.badges) ? entry.profile.badges : [],
+          projectsBuiltCount: Number(entry?.profile?.projectsBuiltCount ?? 0),
+          contributionCount: Number(entry?.profile?.contributionCount ?? 0),
+          streakDays: Number(entry?.profile?.streakDays ?? 0)
+        },
+        recruiterProfile: entry?.recruiterProfile
+          ? {
+              id: String(entry.recruiterProfile.id ?? id("r")),
+              company: entry.recruiterProfile.company ?? "",
+              roleTitle: entry.recruiterProfile.roleTitle ?? "",
+              hiringFor: Array.isArray(entry.recruiterProfile.hiringFor) ? entry.recruiterProfile.hiringFor : [],
+              savedTalent: Array.isArray(entry.recruiterProfile.savedTalent) ? entry.recruiterProfile.savedTalent : []
+            }
+          : undefined,
+        pinnedProjectIds: Array.isArray(entry?.pinnedProjectIds) ? entry.pinnedProjectIds : []
+      }))
+    : [];
+
+  const posts: LocalPost[] = Array.isArray(input?.posts)
+    ? input.posts.map((entry: any) => ({
+        id: String(entry?.id ?? id("post")),
+        authorId: String(entry?.authorId ?? ""),
+        projectId: entry?.projectId,
+        type: (entry?.type ?? "UPDATE") as Post["type"],
+        text: String(entry?.text ?? ""),
+        projectTitle: entry?.projectTitle,
+        githubUrl: entry?.githubUrl,
+        liveDemoUrl: entry?.liveDemoUrl,
+        media: Array.isArray(entry?.media) ? entry.media : [],
+        techStack: Array.isArray(entry?.techStack) ? entry.techStack : [],
+        projectStage: entry?.projectStage,
+        lookingForFeedback: Boolean(entry?.lookingForFeedback),
+        lookingForCollaborators: Boolean(entry?.lookingForCollaborators),
+        hashtags: Array.isArray(entry?.hashtags) ? entry.hashtags : [],
+        aiReview: entry?.aiReview,
+        aiScore: typeof entry?.aiScore === "number" ? entry.aiScore : undefined,
+        createdAt: entry?.createdAt ?? nowIso(),
+        views: Number(entry?.views ?? 0),
+        likes: Array.isArray(entry?.likes) ? entry.likes : [],
+        dislikes: Array.isArray(entry?.dislikes) ? entry.dislikes : [],
+        bookmarks: Array.isArray(entry?.bookmarks) ? entry.bookmarks : [],
+        comments: Array.isArray(entry?.comments) ? entry.comments : [],
+        reposts: Number(entry?.reposts ?? 0),
+        repostedBy: Array.isArray(entry?.repostedBy) ? entry.repostedBy : []
+      }))
+    : [];
+
+  return {
+    users,
+    follows: Array.isArray(input?.follows) ? input.follows : [],
+    posts,
+    projects: Array.isArray(input?.projects) ? input.projects : [],
+    challenges: Array.isArray(input?.challenges) ? input.challenges : [],
+    mentorChats: Array.isArray(input?.mentorChats) ? input.mentorChats : [],
+    notifications: Array.isArray(input?.notifications) ? input.notifications : [],
+    collabRequests: Array.isArray(input?.collabRequests) ? input.collabRequests : [],
+    tags: Array.isArray(input?.tags) ? input.tags : []
+  };
+}
+
 function readDb() {
   const raw = localStorage.getItem(DB_KEY);
   if (!raw) {
@@ -141,7 +220,10 @@ function readDb() {
     localStorage.setItem(DB_KEY, JSON.stringify(emptyDb));
     return emptyDb;
   }
-  return JSON.parse(raw) as LocalDb;
+  const parsed = JSON.parse(raw);
+  const normalized = ensureDbShape(parsed);
+  localStorage.setItem(DB_KEY, JSON.stringify(normalized));
+  return normalized;
 }
 
 function writeDb(db: LocalDb) {
