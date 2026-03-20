@@ -15,7 +15,7 @@ export function LandingPage() {
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Link to="/auth" className="btn-primary">Get Started (Login / Sign up)</Link>
-        <Link to="/home" className="btn-secondary">View Demo Feed</Link>
+        <Link to="/profile" className="btn-secondary">View Profile Experience</Link>
       </div>
     </div>
   );

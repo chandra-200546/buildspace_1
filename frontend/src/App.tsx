@@ -9,7 +9,6 @@ import { CollaborationHubPage } from "./pages/CollaborationHubPage";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { EditProfilePage } from "./pages/EditProfilePage";
 import { ExplorePage } from "./pages/ExplorePage";
-import { FeedPage } from "./pages/FeedPage";
 import { LandingPage } from "./pages/LandingPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -28,7 +27,7 @@ function App() {
         element={
           <AppShell>
             <Routes>
-              <Route path="/home" element={<FeedPage />} />
+              <Route path="/home" element={<Navigate to="/profile" replace />} />
               <Route path="/explore" element={<ExplorePage />} />
               <Route path="/project/:slug" element={<ProjectDetailPage />} />
               <Route path="/create-project" element={<CreateProjectPage />} />
@@ -43,7 +42,7 @@ function App() {
               <Route path="/ai-mentor" element={<AIMentorPage />} />
               <Route path="/ai-review" element={<AIProjectReviewPage />} />
               <Route path="/search" element={<SearchResultsPage />} />
-              <Route path="*" element={<Navigate to="/home" replace />} />
+              <Route path="*" element={<Navigate to="/profile" replace />} />
             </Routes>
           </AppShell>
         }

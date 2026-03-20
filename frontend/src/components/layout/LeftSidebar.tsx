@@ -1,15 +1,14 @@
 import { NavLink } from "react-router-dom";
-import { Bookmark, Bot, BriefcaseBusiness, Compass, Flame, Home, MessageSquare, PlusSquare, UserCircle2 } from "lucide-react";
+import { Bookmark, Bot, BriefcaseBusiness, Compass, Flame, Home, MessageSquare, PlusSquare } from "lucide-react";
 
 const navItems = [
-  { to: "/home", label: "Home", icon: Home },
+  { to: "/profile", label: "Home", icon: Home },
   { to: "/explore", label: "Explore", icon: Compass },
   { to: "/challenges", label: "Challenges", icon: Flame },
   { to: "/collaborate", label: "Collaborate", icon: BriefcaseBusiness },
   { to: "/notifications", label: "Notifications", icon: MessageSquare },
   { to: "/bookmarks", label: "Bookmarks", icon: Bookmark },
-  { to: "/ai-mentor", label: "AI Mentor", icon: Bot },
-  { to: "/profile", label: "Profile", icon: UserCircle2 }
+  { to: "/ai-mentor", label: "AI Mentor", icon: Bot }
 ];
 
 export function LeftSidebar() {

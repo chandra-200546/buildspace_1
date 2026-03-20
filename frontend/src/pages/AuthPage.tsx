@@ -35,7 +35,7 @@ export function AuthPage() {
         },
         result.token
       );
-      nav("/home");
+      nav("/profile");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Unable to authenticate.");
     } finally {
