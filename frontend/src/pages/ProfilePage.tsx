@@ -2,18 +2,31 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "../components/common/Avatar";
 import { EmptyState } from "../components/common/EmptyState";
-import { getProfile } from "../services/api";
+import { FeedCard } from "../components/feed/FeedCard";
+import { getFeed, getProfile } from "../services/api";
 import { useSession } from "../hooks/useSession";
 
 export function ProfilePage() {
   const { user } = useSession();
   const username = useMemo(() => user?.username || "", [user]);
   const [profile, setProfile] = useState<any>(null);
+  const [homePosts, setHomePosts] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"posts" | "home">("posts");
+
+  async function loadProfile() {
+    if (!username) return;
+    const data = await getProfile(username);
+    setProfile(data);
+  }
 
   useEffect(() => {
     if (!username) return;
-    getProfile(username).then(setProfile).catch(() => setProfile(null));
+    loadProfile().catch(() => setProfile(null));
   }, [username]);
+
+  useEffect(() => {
+    getFeed("latest", 1, 20).then(setHomePosts).catch(() => setHomePosts([]));
+  }, []);
 
   if (!username) {
     return <EmptyState title="Profile unavailable" description="Login to create and view your profile." />;
@@ -56,6 +69,39 @@ export function ProfilePage() {
             <p className="text-muted">Streak</p>
             <p className="mt-1 text-xl font-semibold">{profile.profile?.streakDays ?? 0}</p>
           </div>
+        </div>
+      </section>
+
+      <section className="panel overflow-hidden">
+        <div className="flex border-b border-border">
+          <button
+            className={`flex-1 px-4 py-3 text-sm font-medium transition ${activeTab === "posts" ? "border-b-2 border-accent text-text" : "text-muted hover:bg-zinc-900/60"}`}
+            onClick={() => setActiveTab("posts")}
+          >
+            Posts
+          </button>
+          <button
+            className={`flex-1 px-4 py-3 text-sm font-medium transition ${activeTab === "home" ? "border-b-2 border-accent text-text" : "text-muted hover:bg-zinc-900/60"}`}
+            onClick={() => setActiveTab("home")}
+          >
+            Home
+          </button>
+        </div>
+
+        <div className="space-y-3 p-4">
+          {activeTab === "posts" && (profile.posts ?? []).length === 0 && (
+            <EmptyState title="No posts yet" description="Your posts will appear here." />
+          )}
+          {activeTab === "posts" && (profile.posts ?? []).map((post: any) => (
+            <FeedCard key={post.id} post={post} onAction={() => loadProfile().catch(() => undefined)} />
+          ))}
+
+          {activeTab === "home" && homePosts.length === 0 && (
+            <EmptyState title="No posts in home feed" description="Everyone's posts will appear here." />
+          )}
+          {activeTab === "home" && homePosts.map((post: any) => (
+            <FeedCard key={post.id} post={post} onAction={() => getFeed("latest", 1, 20).then(setHomePosts).catch(() => undefined)} />
+          ))}
         </div>
       </section>
 
