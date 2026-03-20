@@ -5,10 +5,10 @@ import { createProject } from "../services/api";
 
 export function CreateProjectPage() {
   const nav = useNavigate();
-  const [title, setTitle] = useState("My New Project");
-  const [shortDescription, setShortDescription] = useState("A project-first social product for developer reputation.");
-  const [fullDescription, setFullDescription] = useState("Detailed explanation of problem, architecture decisions, and progress milestones.");
-  const [tags, setTags] = useState("react,typescript,prisma");
+  const [title, setTitle] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [fullDescription, setFullDescription] = useState("");
+  const [tags, setTags] = useState("");
   const [status, setStatus] = useState<"IDEA" | "BUILDING" | "LAUNCHED">("BUILDING");
   const [loading, setLoading] = useState(false);
 

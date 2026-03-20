@@ -4,7 +4,7 @@ import { askMentor, getMentorChats } from "../services/api";
 import type { MentorChat } from "../types";
 
 export function AIMentorPage() {
-  const [prompt, setPrompt] = useState("What should I improve in this project?");
+  const [prompt, setPrompt] = useState("");
   const [chats, setChats] = useState<MentorChat[]>([]);
   const [loading, setLoading] = useState(false);
 

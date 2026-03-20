@@ -5,20 +5,20 @@ import { updateProfile } from "../services/api";
 
 export function EditProfilePage() {
   const nav = useNavigate();
-  const [name, setName] = useState("Alex Rivera");
-  const [bio, setBio] = useState("Building AI-powered developer tools in public.");
-  const [skills, setSkills] = useState("React,TypeScript,Node,Prisma");
-  const [githubUsername, setGithubUsername] = useState("alexcodes");
-  const [portfolioUrl, setPortfolioUrl] = useState("https://alex.dev");
-  const [openToCollaborate, setOpenToCollaborate] = useState(true);
-  const [openToHire, setOpenToHire] = useState(true);
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [skills, setSkills] = useState("");
+  const [githubUsername, setGithubUsername] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [openToCollaborate, setOpenToCollaborate] = useState(false);
+  const [openToHire, setOpenToHire] = useState(false);
 
   async function submit() {
     await updateProfile({
       name,
       bio,
       skills: skills.split(",").map((skill) => skill.trim()),
-      badges: ["Top Builder"],
+      badges: [],
       githubUsername,
       portfolioUrl,
       openToCollaborate,

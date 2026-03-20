@@ -7,7 +7,7 @@ import { useSession } from "../hooks/useSession";
 
 export function ProfilePage() {
   const { user } = useSession();
-  const username = useMemo(() => user?.username || (import.meta.env.VITE_DEFAULT_USERNAME as string), [user]);
+  const username = useMemo(() => user?.username || "", [user]);
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -15,8 +15,12 @@ export function ProfilePage() {
     getProfile(username).then(setProfile).catch(() => setProfile(null));
   }, [username]);
 
+  if (!username) {
+    return <EmptyState title="Profile unavailable" description="Login to create and view your profile." />;
+  }
+
   if (!profile) {
-    return <EmptyState title="Profile unavailable" description="Login and create profile data to view this page." />;
+    return <EmptyState title="Profile unavailable" description="Create your account and profile data to view this page." />;
   }
 
   return (

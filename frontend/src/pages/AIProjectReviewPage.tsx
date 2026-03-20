@@ -6,7 +6,7 @@ import type { AIReview, Project } from "../types";
 export function AIProjectReviewPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectId, setProjectId] = useState("");
-  const [prompt, setPrompt] = useState("Review code quality and suggest performance improvements.");
+  const [prompt, setPrompt] = useState("");
   const [review, setReview] = useState<AIReview | null>(null);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export function AIProjectReviewPage() {
             <option key={project.id} value={project.id}>{project.title}</option>
           ))}
         </select>
-        <textarea className="input min-h-24" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+        <textarea className="input min-h-24" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What should the AI review focus on?" />
         <button className="btn-primary" onClick={submit}>Run Mock AI Review</button>
       </section>
 

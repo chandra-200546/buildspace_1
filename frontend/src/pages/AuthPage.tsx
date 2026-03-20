@@ -5,10 +5,10 @@ import { useSession } from "../hooks/useSession";
 
 export function AuthPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [name, setName] = useState("Alex Rivera");
-  const [username, setUsername] = useState("alexcodes");
-  const [email, setEmail] = useState("alex@buildspace.ai");
-  const [password, setPassword] = useState("password123");
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"DEVELOPER" | "RECRUITER">("DEVELOPER");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,8 +36,8 @@ export function AuthPage() {
         result.token
       );
       nav("/home");
-    } catch {
-      setError("Unable to authenticate. Check backend and credentials.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unable to authenticate.");
     } finally {
       setLoading(false);
     }

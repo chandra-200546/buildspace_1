@@ -4,7 +4,7 @@ import { PageTitle } from "../components/common/PageTitle";
 import { searchAll } from "../services/api";
 
 export function SearchResultsPage() {
-  const [query, setQuery] = useState("ai");
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<any | null>(null);
 
   async function run() {

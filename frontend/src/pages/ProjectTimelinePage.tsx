@@ -8,9 +8,9 @@ import type { ProjectUpdate } from "../types";
 export function ProjectTimelinePage() {
   const { projectId = "" } = useParams();
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
-  const [dayLabel, setDayLabel] = useState("Day 4");
-  const [title, setTitle] = useState("Deployment and analytics");
-  const [description, setDescription] = useState("Completed deployment and added event tracking.");
+  const [dayLabel, setDayLabel] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   async function load() {
     const { data } = await api.get<ProjectUpdate[]>(`/api/projects/${projectId}/timeline`);

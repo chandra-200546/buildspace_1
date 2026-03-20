@@ -5,8 +5,8 @@ import { getRecruiterDashboard, searchTalent, shortlistTalent } from "../service
 export function RecruiterDashboardPage() {
   const [dashboard, setDashboard] = useState<any>(null);
   const [results, setResults] = useState<any[]>([]);
-  const [skill, setSkill] = useState("React");
-  const [openToHire, setOpenToHire] = useState(true);
+  const [skill, setSkill] = useState("");
+  const [openToHire, setOpenToHire] = useState(false);
 
   useEffect(() => {
     getRecruiterDashboard().then(setDashboard).catch(() => setDashboard(null));
@@ -18,7 +18,7 @@ export function RecruiterDashboardPage() {
   }
 
   async function saveTalent(userId: string) {
-    await shortlistTalent(userId, "High proof-of-work signal");
+    await shortlistTalent(userId);
     setDashboard(await getRecruiterDashboard());
   }
 
