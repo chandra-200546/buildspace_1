@@ -137,6 +137,18 @@ export async function updateProfile(payload: Record<string, unknown>) {
   return data;
 }
 
+export async function followUser(userId: string) {
+  if (useLocalDb) return localDbApi.followUser(userId);
+  const { data } = await api.post(`/api/profiles/${userId}/follow`);
+  return data;
+}
+
+export async function unfollowUser(userId: string) {
+  if (useLocalDb) return localDbApi.unfollowUser(userId);
+  const { data } = await api.delete(`/api/profiles/${userId}/follow`);
+  return data;
+}
+
 export async function getRecruiterDashboard() {
   if (useLocalDb) return localDbApi.getRecruiterDashboard();
   const { data } = await api.get("/api/recruiter/dashboard");

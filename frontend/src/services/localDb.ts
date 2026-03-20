@@ -75,6 +75,7 @@ type LocalChallenge = Omit<Challenge, "submissions"> & {
 
 type LocalDb = {
   users: LocalUser[];
+  follows: Array<{ id: string; followerId: string; followingId: string }>;
   posts: LocalPost[];
   projects: LocalProject[];
   challenges: LocalChallenge[];
@@ -122,6 +123,7 @@ function scoreFromProject(project: Partial<LocalProject>) {
 function createEmptyDb(): LocalDb {
   return {
     users: [],
+    follows: [],
     posts: [],
     projects: [],
     challenges: [],
@@ -565,6 +567,12 @@ export const localDbApi = {
     const db = readDb();
     const user = db.users.find((entry) => entry.username === username);
     if (!user) throw new Error("User not found");
+    const session = getSessionUser();
+    const viewerId = session?.id;
+    const followerCount = db.follows.filter((entry) => entry.followingId === user.id).length;
+    const followingCount = db.follows.filter((entry) => entry.followerId === user.id).length;
+    const viewerFollowing = Boolean(viewerId && db.follows.some((entry) => entry.followerId === viewerId && entry.followingId === user.id));
+    const followsViewer = Boolean(viewerId && db.follows.some((entry) => entry.followerId === user.id && entry.followingId === viewerId));
 
     const ownedProjects = db.projects.filter((entry) => entry.ownerId === user.id).map((entry) => mapProject(entry, db));
     const posts = db.posts.filter((entry) => entry.authorId === user.id).map((entry) => mapPost(entry, db));
@@ -583,6 +591,10 @@ export const localDbApi = {
       openToHire: user.openToHire,
       githubUsername: user.githubUsername,
       portfolioUrl: user.portfolioUrl,
+      followerCount,
+      followingCount,
+      viewerFollowing,
+      followsViewer,
       profile: user.profile,
       ownedProjects,
       pinnedProjects,
@@ -610,6 +622,30 @@ export const localDbApi = {
 
     writeDb(db);
     return this.getProfile(user.username);
+  },
+
+  followUser(targetUserId: string) {
+    const db = readDb();
+    const user = requireSessionUser(db);
+    if (user.id === targetUserId) throw new Error("You cannot follow yourself.");
+
+    const target = db.users.find((entry) => entry.id === targetUserId);
+    if (!target) throw new Error("User not found");
+
+    const exists = db.follows.some((entry) => entry.followerId === user.id && entry.followingId === targetUserId);
+    if (!exists) {
+      db.follows.push({ id: id("f"), followerId: user.id, followingId: targetUserId });
+      writeDb(db);
+    }
+    return { ok: true };
+  },
+
+  unfollowUser(targetUserId: string) {
+    const db = readDb();
+    const user = requireSessionUser(db);
+    db.follows = db.follows.filter((entry) => !(entry.followerId === user.id && entry.followingId === targetUserId));
+    writeDb(db);
+    return { ok: true };
   },
 
   getRecruiterDashboard() {

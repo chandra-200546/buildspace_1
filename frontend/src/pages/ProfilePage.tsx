@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Avatar } from "../components/common/Avatar";
 import { EmptyState } from "../components/common/EmptyState";
 import { FeedCard } from "../components/feed/FeedCard";
-import { getFeed, getProfile, updateProfile } from "../services/api";
+import { followUser, getFeed, getProfile, unfollowUser, updateProfile } from "../services/api";
 import { useSession } from "../hooks/useSession";
 
 export function ProfilePage() {
   const { user } = useSession();
-  const username = useMemo(() => user?.username || "", [user]);
+  const params = useParams();
+  const username = useMemo(() => params.username || user?.username || "", [params.username, user?.username]);
   const [profile, setProfile] = useState<any>(null);
   const [homePosts, setHomePosts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"posts" | "home">("posts");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const isOwnProfile = Boolean(user?.id && profile?.id && user.id === profile.id);
 
   const fileToDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -106,7 +109,9 @@ export function ProfilePage() {
         />
         <button
           className="group relative block h-28 w-full overflow-hidden rounded-2xl border border-border"
-          onClick={() => coverInputRef.current?.click()}
+          onClick={() => {
+            if (isOwnProfile) coverInputRef.current?.click();
+          }}
           type="button"
         >
           {profile.coverImage ? (
@@ -114,20 +119,58 @@ export function ProfilePage() {
           ) : (
             <div className="h-full w-full bg-gradient-to-r from-cyan-900/40 via-zinc-900 to-emerald-900/40" />
           )}
-          <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-xs text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
-            {uploadingCover ? "Updating cover..." : "Click to edit cover"}
-          </span>
+          {isOwnProfile && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-xs text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
+              {uploadingCover ? "Updating cover..." : "Click to edit cover"}
+            </span>
+          )}
         </button>
         <div className="-mt-10 flex items-end justify-between gap-3 px-2">
-          <button className="group relative rounded-full" onClick={() => avatarInputRef.current?.click()} type="button">
+          <button
+            className="group relative rounded-full"
+            onClick={() => {
+              if (isOwnProfile) avatarInputRef.current?.click();
+            }}
+            type="button"
+          >
             <Avatar name={profile.name} image={profile.image} size="xl" />
-            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-[10px] text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
-              {uploadingAvatar ? "Updating..." : "Edit"}
-            </span>
+            {isOwnProfile && (
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-[10px] text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+                {uploadingAvatar ? "Updating..." : "Edit"}
+              </span>
+            )}
           </button>
-          <Link to="/profile/edit" className="btn-secondary">
-            Edit Profile
-          </Link>
+          {isOwnProfile ? (
+            <Link to="/profile/edit" className="btn-secondary">
+              Edit Profile
+            </Link>
+          ) : (
+            <button
+              className={`btn-secondary ${profile.viewerFollowing ? "border-emerald-500/60 text-emerald-300" : ""}`}
+              onClick={async () => {
+                setFollowLoading(true);
+                try {
+                  if (profile.viewerFollowing) {
+                    await unfollowUser(profile.id);
+                  } else {
+                    await followUser(profile.id);
+                  }
+                  await loadProfile();
+                } finally {
+                  setFollowLoading(false);
+                }
+              }}
+              disabled={followLoading}
+            >
+              {followLoading
+                ? "Please wait..."
+                : profile.viewerFollowing
+                  ? "Following"
+                  : profile.followsViewer
+                    ? "Follow back"
+                    : "Follow"}
+            </button>
+          )}
         </div>
         <div className="mt-3 px-2">
           <p className="text-xl font-semibold">{profile.name}</p>
@@ -138,6 +181,10 @@ export function ProfilePage() {
           {(profile.profile?.skills ?? []).map((skill: string) => (
             <span key={skill} className="rounded-full border border-border px-3 py-1 text-xs text-muted">{skill}</span>
           ))}
+        </div>
+        <div className="mt-3 flex items-center gap-5 px-2 text-sm">
+          <p><span className="font-semibold">{profile.followingCount ?? 0}</span> <span className="text-muted">Following</span></p>
+          <p><span className="font-semibold">{profile.followerCount ?? 0}</span> <span className="text-muted">Followers</span></p>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
           <div className="rounded-xl border border-border p-3">

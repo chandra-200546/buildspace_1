@@ -1,4 +1,5 @@
 import type { RightRail } from "../../types";
+import { Link } from "react-router-dom";
 import { Avatar } from "../common/Avatar";
 
 type Props = {
@@ -27,7 +28,9 @@ export function RightSidebar({ data }: Props) {
               <div className="flex items-center gap-2">
                 <Avatar name={dev.name} image={dev.image} size="sm" />
                 <div>
-                  <p className="text-sm font-medium">{dev.name}</p>
+                  <Link to={`/profile/${dev.username}`} className="text-sm font-medium hover:underline">
+                    {dev.name}
+                  </Link>
                   <p className="text-xs text-muted">@{dev.username}</p>
                 </div>
               </div>

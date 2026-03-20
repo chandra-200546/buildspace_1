@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bookmark, Bot, ExternalLink, Eye, GitFork, Heart, MessageCircle, ThumbsDown } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { Post } from "../../types";
 import { addCommentToPost, bookmarkPost, dislikePost, likePost, registerPostView, repostPost, runPostAiReview } from "../../services/api";
 import { Avatar } from "../common/Avatar";
@@ -66,7 +67,9 @@ export function FeedCard({ post, onAction }: Props) {
         <div className="flex items-center gap-3">
           <Avatar name={post.author.name} image={post.author.image} size="md" />
           <div>
-            <p className="text-sm font-semibold">{post.author.name}</p>
+            <Link to={`/profile/${post.author.username}`} className="text-sm font-semibold hover:underline">
+              {post.author.name}
+            </Link>
             <p className="text-xs text-muted">@{post.author.username}</p>
           </div>
         </div>

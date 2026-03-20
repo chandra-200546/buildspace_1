@@ -33,6 +33,7 @@ function App() {
               <Route path="/create-project" element={<CreateProjectPage />} />
               <Route path="/timeline/:projectId" element={<ProjectTimelinePage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/:username" element={<ProfilePage />} />
               <Route path="/profile/edit" element={<EditProfilePage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/bookmarks" element={<BookmarksPage />} />
