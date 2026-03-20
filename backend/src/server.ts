@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import type { Server } from "node:http";
 import authRoutes from "./routes/auth.js";
 import feedRoutes from "./routes/feed.js";
 import projectRoutes from "./routes/projects.js";
@@ -43,6 +44,22 @@ app.use("/api/search", searchRoutes);
 
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`BuildSpace AI backend running on http://localhost:${port}`);
-});
+function startServer(targetPort: number, retries = 5) {
+  const server: Server = app.listen(targetPort, () => {
+    console.log(`BuildSpace AI backend running on http://localhost:${targetPort}`);
+  });
+
+  server.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code === "EADDRINUSE" && retries > 0) {
+      const nextPort = targetPort + 1;
+      console.warn(`Port ${targetPort} is busy. Retrying on ${nextPort}...`);
+      startServer(nextPort, retries - 1);
+      return;
+    }
+
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  });
+}
+
+startServer(port);
