@@ -77,7 +77,7 @@ type LocalDb = {
   tags: Array<{ id: string; label: string; usage: number }>;
 };
 
-const DB_KEY = "buildspace_local_db_v1";
+const DB_KEY = "buildspace_local_db_v2";
 
 function id(prefix: string) {
   const uid = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;

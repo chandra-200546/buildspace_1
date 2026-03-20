@@ -8,7 +8,7 @@ type Props = {
 export function PostComposer({ onCreated }: Props) {
   const [text, setText] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
-  const [techStack, setTechStack] = useState("react,typescript");
+  const [techStack, setTechStack] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function submit() {
@@ -27,6 +27,7 @@ export function PostComposer({ onCreated }: Props) {
       });
       setText("");
       setProjectTitle("");
+      setTechStack("");
       onCreated();
     } finally {
       setLoading(false);
