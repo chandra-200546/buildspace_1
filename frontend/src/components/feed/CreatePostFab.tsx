@@ -3,12 +3,27 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPost } from "../../services/api";
 
+async function filesToDataUrls(files: FileList | null) {
+  if (!files || files.length === 0) return [] as string[];
+  const tasks = Array.from(files).map(
+    (file) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(new Error("Failed to read media file"));
+        reader.readAsDataURL(file);
+      })
+  );
+  return Promise.all(tasks);
+}
+
 export function CreatePostFab() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
   const [techStack, setTechStack] = useState("");
   const [hashtags, setHashtags] = useState("");
+  const [media, setMedia] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -17,6 +32,7 @@ export function CreatePostFab() {
     setProjectTitle("");
     setTechStack("");
     setHashtags("");
+    setMedia([]);
   };
 
   const submit = async () => {
@@ -35,7 +51,7 @@ export function CreatePostFab() {
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean),
-        media: []
+        media
       });
       window.dispatchEvent(new Event("buildspace:post-created"));
       setOpen(false);
@@ -93,6 +109,33 @@ export function CreatePostFab() {
               />
             </div>
 
+            <div className="mt-3 space-y-2">
+              <label className="block text-xs text-muted">Add media (photos/videos)</label>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="input cursor-pointer py-2"
+                onChange={async (event) => {
+                  const dataUrls = await filesToDataUrls(event.target.files);
+                  setMedia(dataUrls.slice(0, 6));
+                }}
+              />
+              {media.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {media.map((item, index) => (
+                    <div key={`${item.slice(0, 30)}-${index}`} className="overflow-hidden rounded-lg border border-border">
+                      {item.startsWith("data:video") ? (
+                        <video src={item} className="h-24 w-full object-cover" muted />
+                      ) : (
+                        <img src={item} alt={`media-${index + 1}`} className="h-24 w-full object-cover" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="mt-4 flex justify-end">
               <button onClick={submit} disabled={loading} className="btn-primary disabled:opacity-70">
                 {loading ? "Posting..." : "Post"}
@@ -104,4 +147,3 @@ export function CreatePostFab() {
     </>
   );
 }
-

@@ -9,6 +9,11 @@ type Props = {
   onAction: () => void;
 };
 
+function isVideoMedia(value: string) {
+  if (value.startsWith("data:video")) return true;
+  return /\.(mp4|webm|ogg|mov)$/i.test(value);
+}
+
 export function FeedCard({ post, onAction }: Props) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -62,6 +67,20 @@ export function FeedCard({ post, onAction }: Props) {
       </div>
 
       <p className="mt-3 text-sm leading-relaxed text-zinc-200">{post.text}</p>
+
+      {Boolean(post.media?.length) && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {(post.media ?? []).slice(0, 4).map((item, index) => (
+            <div key={`${item.slice(0, 30)}-${index}`} className="overflow-hidden rounded-xl border border-border bg-zinc-900/70">
+              {isVideoMedia(item) ? (
+                <video src={item} controls className="h-52 w-full object-cover" />
+              ) : (
+                <img src={item} alt={`post-media-${index + 1}`} className="h-52 w-full object-cover" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {Boolean(post.hashtags?.length) && (
         <div className="mt-3 flex flex-wrap gap-2">
