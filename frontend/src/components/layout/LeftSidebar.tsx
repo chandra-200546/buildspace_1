@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-import { Bookmark, Bot, BriefcaseBusiness, Compass, Flame, Home, MessageSquare } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { Bookmark, Bot, BriefcaseBusiness, Compass, Flame, Home, LogOut, MessageSquare } from "lucide-react";
 
 const navItems = [
   { to: "/profile", label: "Home", icon: Home },
@@ -12,8 +12,17 @@ const navItems = [
 ];
 
 export function LeftSidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("buildspace_user");
+    localStorage.removeItem("buildspace_token");
+    navigate("/auth", { replace: true });
+  };
+
   return (
     <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border px-4 py-6 lg:block">
+      <div className="flex h-full flex-col">
       <div className="mb-8 px-2">
         <h1 className="text-2xl font-bold tracking-tight">BuildSpace AI</h1>
         <p className="mt-1 text-xs text-muted">Show your work. Build your reputation. Get opportunities.</p>
@@ -38,6 +47,15 @@ export function LeftSidebar() {
           );
         })}
       </nav>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="mt-auto flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-900"
+      >
+        <LogOut className="h-4 w-4" />
+        Logout
+      </button>
+      </div>
     </aside>
   );
 }
