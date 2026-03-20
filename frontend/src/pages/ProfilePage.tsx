@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "../components/common/Avatar";
 import { EmptyState } from "../components/common/EmptyState";
 import { FeedCard } from "../components/feed/FeedCard";
-import { getFeed, getProfile } from "../services/api";
+import { getFeed, getProfile, updateProfile } from "../services/api";
 import { useSession } from "../hooks/useSession";
 
 export function ProfilePage() {
@@ -12,6 +12,18 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [homePosts, setHomePosts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"posts" | "home">("posts");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(new Error("Failed to read image"));
+      reader.readAsDataURL(file);
+    });
 
   async function loadProfile() {
     if (!username) return;
@@ -54,9 +66,65 @@ export function ProfilePage() {
   return (
     <div className="space-y-4">
       <section className="panel p-4">
-        <div className="h-28 rounded-2xl bg-gradient-to-r from-cyan-900/40 via-zinc-900 to-emerald-900/40" />
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            setUploadingCover(true);
+            try {
+              const coverImage = await fileToDataUrl(file);
+              await updateProfile({ coverImage });
+              await loadProfile();
+            } finally {
+              setUploadingCover(false);
+              event.target.value = "";
+            }
+          }}
+        />
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            setUploadingAvatar(true);
+            try {
+              const image = await fileToDataUrl(file);
+              await updateProfile({ image });
+              await loadProfile();
+            } finally {
+              setUploadingAvatar(false);
+              event.target.value = "";
+            }
+          }}
+        />
+        <button
+          className="group relative block h-28 w-full overflow-hidden rounded-2xl border border-border"
+          onClick={() => coverInputRef.current?.click()}
+          type="button"
+        >
+          {profile.coverImage ? (
+            <img src={profile.coverImage} alt="Profile cover" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-cyan-900/40 via-zinc-900 to-emerald-900/40" />
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-xs text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
+            {uploadingCover ? "Updating cover..." : "Click to edit cover"}
+          </span>
+        </button>
         <div className="-mt-10 flex items-end justify-between gap-3 px-2">
-          <Avatar name={profile.name} image={profile.image} size="xl" />
+          <button className="group relative rounded-full" onClick={() => avatarInputRef.current?.click()} type="button">
+            <Avatar name={profile.name} image={profile.image} size="xl" />
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-[10px] text-white opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+              {uploadingAvatar ? "Updating..." : "Edit"}
+            </span>
+          </button>
           <Link to="/profile/edit" className="btn-secondary">
             Edit Profile
           </Link>

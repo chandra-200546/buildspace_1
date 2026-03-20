@@ -10,6 +10,7 @@ type LocalUser = {
   username: string;
   role: Role;
   image?: string;
+  coverImage?: string;
   githubUsername?: string;
   portfolioUrl?: string;
   openToCollaborate: boolean;
@@ -577,6 +578,7 @@ export const localDbApi = {
       name: user.name,
       username: user.username,
       image: user.image,
+      coverImage: user.coverImage,
       openToCollaborate: user.openToCollaborate,
       openToHire: user.openToHire,
       githubUsername: user.githubUsername,
@@ -593,6 +595,8 @@ export const localDbApi = {
     const user = requireSessionUser(db);
 
     user.name = payload.name ?? user.name;
+    user.image = payload.image ?? user.image;
+    user.coverImage = payload.coverImage ?? user.coverImage;
     user.githubUsername = payload.githubUsername ?? user.githubUsername;
     user.portfolioUrl = payload.portfolioUrl ?? user.portfolioUrl;
     user.openToCollaborate = payload.openToCollaborate ?? user.openToCollaborate;
