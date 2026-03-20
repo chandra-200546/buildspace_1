@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Avatar } from "../components/common/Avatar";
 import { EmptyState } from "../components/common/EmptyState";
 import { FeedCard } from "../components/feed/FeedCard";
-import { PostComposer } from "../components/feed/PostComposer";
 import { getFeed, getProfile } from "../services/api";
 import { useSession } from "../hooks/useSession";
 
@@ -34,6 +33,16 @@ export function ProfilePage() {
     refreshHomeFeed().catch(() => setHomePosts([]));
   }, []);
 
+  useEffect(() => {
+    const handlePostCreated = () => {
+      loadProfile().catch(() => undefined);
+      refreshHomeFeed().catch(() => undefined);
+    };
+
+    window.addEventListener("buildspace:post-created", handlePostCreated);
+    return () => window.removeEventListener("buildspace:post-created", handlePostCreated);
+  }, [username]);
+
   if (!username) {
     return <EmptyState title="Profile unavailable" description="Login to create and view your profile." />;
   }
@@ -44,16 +53,6 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-4">
-      <section className="panel p-4">
-        <h3 className="mb-3 text-sm font-semibold">Create Post</h3>
-        <PostComposer
-          onCreated={() => {
-            loadProfile().catch(() => undefined);
-            refreshHomeFeed().catch(() => undefined);
-          }}
-        />
-      </section>
-
       <section className="panel p-4">
         <div className="h-28 rounded-2xl bg-gradient-to-r from-cyan-900/40 via-zinc-900 to-emerald-900/40" />
         <div className="-mt-10 flex items-end justify-between gap-3 px-2">

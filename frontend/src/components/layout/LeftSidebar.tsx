@@ -1,5 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
-import { Bookmark, Bot, BriefcaseBusiness, Compass, Flame, Home, MessageSquare, PlusSquare } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { Bookmark, Bot, BriefcaseBusiness, Compass, Flame, Home, MessageSquare } from "lucide-react";
 
 const navItems = [
   { to: "/profile", label: "Home", icon: Home },
@@ -38,11 +38,6 @@ export function LeftSidebar() {
           );
         })}
       </nav>
-
-      <Link to="/profile" className="btn-primary mt-8 flex w-full items-center justify-center gap-2">
-        <PlusSquare className="h-4 w-4" />
-        Post Project
-      </Link>
     </aside>
   );
 }

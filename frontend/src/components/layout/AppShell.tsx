@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { CreatePostFab } from "../feed/CreatePostFab";
 import { LeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
 import { getRightRail } from "../../services/api";
@@ -20,6 +21,7 @@ export function AppShell({ children }: Props) {
       <LeftSidebar />
       <main className="min-h-screen flex-1 border-x border-border px-3 py-6 md:px-6">{children}</main>
       <RightSidebar data={rightRail} />
+      <CreatePostFab />
     </div>
   );
 }
