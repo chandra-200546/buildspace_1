@@ -31,6 +31,23 @@ export function FeedCard({ post, onAction }: Props) {
 
       <p className="mt-3 text-sm leading-relaxed text-zinc-200">{post.text}</p>
 
+      {Boolean(post.hashtags?.length) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(post.hashtags ?? []).slice(0, 6).map((tag) => (
+            <span key={tag} className="rounded-full border border-cyan-800/50 bg-cyan-900/20 px-2 py-1 text-[10px] text-cyan-300">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {typeof post.matchedAudienceCount === "number" && post.matchedAudienceCount > 0 && (
+        <p className="mt-2 text-xs text-emerald-300">
+          Reach potential: {post.matchedAudienceCount} matching developers
+          {post.matchedAudienceUsernames?.length ? ` (e.g. ${post.matchedAudienceUsernames.map((u) => `@${u}`).join(", ")})` : ""}
+        </p>
+      )}
+
       {post.project && (
         <div className="mt-3 rounded-xl border border-border bg-zinc-950/60 p-3">
           <p className="text-sm font-medium">{post.project.title}</p>

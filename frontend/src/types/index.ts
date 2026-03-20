@@ -55,6 +55,9 @@ export type Post = {
   liveDemoUrl?: string;
   lookingForFeedback: boolean;
   lookingForCollaborators: boolean;
+  hashtags?: string[];
+  matchedAudienceCount?: number;
+  matchedAudienceUsernames?: string[];
   createdAt: string;
   author: UserLite;
   project?: Pick<Project, "id" | "title" | "slug" | "status" | "tags" | "score">;

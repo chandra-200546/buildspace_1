@@ -9,6 +9,7 @@ export function PostComposer({ onCreated }: Props) {
   const [text, setText] = useState("");
   const [projectTitle, setProjectTitle] = useState("");
   const [techStack, setTechStack] = useState("");
+  const [hashtags, setHashtags] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function submit() {
@@ -23,11 +24,16 @@ export function PostComposer({ onCreated }: Props) {
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean),
+        hashtags: hashtags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
         media: []
       });
       setText("");
       setProjectTitle("");
       setTechStack("");
+      setHashtags("");
       onCreated();
     } finally {
       setLoading(false);
@@ -43,7 +49,7 @@ export function PostComposer({ onCreated }: Props) {
         onChange={(e) => setText(e.target.value)}
         placeholder="Share project progress, launch, or collaboration request..."
       />
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
         <input
           className="input"
           value={projectTitle}
@@ -55,6 +61,12 @@ export function PostComposer({ onCreated }: Props) {
           value={techStack}
           onChange={(e) => setTechStack(e.target.value)}
           placeholder="Tech stack tags (comma separated)"
+        />
+        <input
+          className="input"
+          value={hashtags}
+          onChange={(e) => setHashtags(e.target.value)}
+          placeholder="Hashtags (e.g. #react,#buildinpublic)"
         />
       </div>
       <div className="mt-3 flex justify-end">

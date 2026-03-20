@@ -47,6 +47,7 @@ type LocalPost = {
   projectStage?: Post["projectStage"];
   lookingForFeedback: boolean;
   lookingForCollaborators: boolean;
+  hashtags: string[];
   createdAt: string;
   likes: string[];
   bookmarks: string[];
@@ -143,6 +144,61 @@ function withUser(userId: string, db: LocalDb) {
   return db.users.find((entry) => entry.id === userId);
 }
 
+function normalizeHashtag(value: string) {
+  const cleaned = value.trim().toLowerCase().replace(/[^a-z0-9_#]/g, "");
+  if (!cleaned) return "";
+  return cleaned.startsWith("#") ? cleaned : `#${cleaned}`;
+}
+
+function extractHashtagsFromText(text: string) {
+  const matches = text.match(/#[a-zA-Z0-9_]+/g) ?? [];
+  return matches.map((match) => normalizeHashtag(match)).filter(Boolean);
+}
+
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function buildUserInterest(userId: string, db: LocalDb) {
+  const weights = new Map<string, number>();
+
+  const add = (tag: string, score: number) => {
+    const normalized = normalizeHashtag(tag);
+    if (!normalized) return;
+    weights.set(normalized, (weights.get(normalized) ?? 0) + score);
+  };
+
+  const user = db.users.find((entry) => entry.id === userId);
+  if (!user) return weights;
+
+  user.profile.skills.forEach((skill) => add(skill, 3));
+  db.projects.filter((entry) => entry.ownerId === userId).forEach((project) => project.tags.forEach((tag) => add(tag, 2)));
+  db.posts.filter((entry) => entry.authorId === userId).forEach((post) => (post.hashtags ?? []).forEach((tag) => add(tag, 2)));
+  db.posts.filter((entry) => entry.likes.includes(userId) || entry.bookmarks.includes(userId)).forEach((post) => (post.hashtags ?? []).forEach((tag) => add(tag, 1)));
+
+  return weights;
+}
+
+function computeAudienceMatch(hashtags: string[], authorId: string, db: LocalDb) {
+  const normalizedTags = uniqueValues(hashtags.map((tag) => normalizeHashtag(tag)));
+  if (normalizedTags.length === 0) return { matchedAudienceCount: 0, matchedAudienceUsernames: [] as string[] };
+
+  const candidates = db.users
+    .filter((entry) => entry.role === "DEVELOPER" && entry.id !== authorId)
+    .map((entry) => {
+      const interest = buildUserInterest(entry.id, db);
+      const score = normalizedTags.reduce((sum, tag) => sum + (interest.get(tag) ?? 0), 0);
+      return { username: entry.username, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  return {
+    matchedAudienceCount: candidates.length,
+    matchedAudienceUsernames: candidates.slice(0, 3).map((entry) => entry.username)
+  };
+}
+
 function mapPost(post: LocalPost, db: LocalDb): Post {
   const author = withUser(post.authorId, db);
   if (!author) throw new Error("Post author not found");
@@ -160,6 +216,8 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
     liveDemoUrl: post.liveDemoUrl,
     lookingForFeedback: post.lookingForFeedback,
     lookingForCollaborators: post.lookingForCollaborators,
+    hashtags: post.hashtags ?? [],
+    ...computeAudienceMatch(post.hashtags ?? [], post.authorId, db),
     createdAt: post.createdAt,
     author: { id: author.id, name: author.name, username: author.username, image: author.image },
     project: project
@@ -216,6 +274,10 @@ export const localDbApi = {
   createPost(payload: any) {
     const db = readDb();
     const sessionUser = requireSessionUser(db);
+    const fromText = extractHashtagsFromText(payload.text ?? "");
+    const fromTechStack = (payload.techStack ?? []).map((tag: string) => normalizeHashtag(tag));
+    const fromInput = (payload.hashtags ?? []).map((tag: string) => normalizeHashtag(tag));
+    const hashtags = uniqueValues([...fromText, ...fromTechStack, ...fromInput]);
 
     const post: LocalPost = {
       id: id("post"),
@@ -231,6 +293,7 @@ export const localDbApi = {
       projectStage: payload.projectStage,
       lookingForFeedback: Boolean(payload.lookingForFeedback),
       lookingForCollaborators: Boolean(payload.lookingForCollaborators),
+      hashtags,
       createdAt: nowIso(),
       likes: [],
       bookmarks: [],
@@ -239,7 +302,7 @@ export const localDbApi = {
     };
 
     db.posts.unshift(post);
-    post.techStack.forEach((tag) => upsertTag(db, tag));
+    post.hashtags.forEach((tag) => upsertTag(db, tag));
     writeDb(db);
     return mapPost(post, db);
   },
@@ -376,7 +439,9 @@ export const localDbApi = {
     return {
       projects: db.projects.filter((entry) => entry.title.toLowerCase().includes(q) || entry.tags.some((tag) => tag.toLowerCase().includes(q))).map((entry) => mapProject(entry, db)),
       users: db.users.filter((entry) => entry.name.toLowerCase().includes(q) || entry.username.toLowerCase().includes(q)),
-      posts: db.posts.filter((entry) => entry.text.toLowerCase().includes(q)).map((entry) => mapPost(entry, db))
+      posts: db.posts
+        .filter((entry) => entry.text.toLowerCase().includes(q) || (entry.hashtags ?? []).some((tag) => tag.toLowerCase().includes(q)))
+        .map((entry) => mapPost(entry, db))
     };
   },
 
