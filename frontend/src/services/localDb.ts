@@ -57,6 +57,7 @@ type LocalPost = {
   bookmarks: string[];
   comments: Array<{ id: string; authorId: string; text: string; createdAt: string }>;
   reposts: number;
+  repostedBy: string[];
 };
 
 type LocalProject = Omit<Project, "owner" | "score" | "updates"> & {
@@ -226,6 +227,9 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
     })
     .filter(Boolean) as Post["comments"];
 
+  const session = getSessionUser();
+  const viewerId = session?.id;
+
   return {
     id: post.id,
     text: post.text,
@@ -244,6 +248,13 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
     aiScore: post.aiScore,
     views: post.views ?? 0,
     comments: mappedComments,
+    viewer: {
+      liked: Boolean(viewerId && post.likes.includes(viewerId)),
+      disliked: Boolean(viewerId && (post.dislikes ?? []).includes(viewerId)),
+      bookmarked: Boolean(viewerId && post.bookmarks.includes(viewerId)),
+      reposted: Boolean(viewerId && (post.repostedBy ?? []).includes(viewerId)),
+      commented: Boolean(viewerId && (post.comments ?? []).some((entry) => entry.authorId === viewerId))
+    },
     createdAt: post.createdAt,
     author: { id: author.id, name: author.name, username: author.username, image: author.image },
     project: project
@@ -260,7 +271,7 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
       likes: post.likes.length,
       dislikes: (post.dislikes ?? []).length,
       comments: (post.comments ?? []).length,
-      reposts: post.reposts,
+      reposts: (post.repostedBy ?? []).length > 0 ? (post.repostedBy ?? []).length : post.reposts,
       bookmarks: post.bookmarks.length,
       views: post.views ?? 0
     }
@@ -330,7 +341,8 @@ export const localDbApi = {
       dislikes: [],
       bookmarks: [],
       comments: [],
-      reposts: 0
+      reposts: 0,
+      repostedBy: []
     };
 
     db.posts.unshift(post);
@@ -375,8 +387,15 @@ export const localDbApi = {
 
   repostPost(postId: string) {
     const db = readDb();
+    const user = requireSessionUser(db);
     const post = db.posts.find((entry) => entry.id === postId);
-    if (post) post.reposts += 1;
+    if (post) {
+      post.repostedBy = post.repostedBy ?? [];
+      if (!post.repostedBy.includes(user.id)) {
+        post.repostedBy.push(user.id);
+      }
+      post.reposts = post.repostedBy.length;
+    }
     writeDb(db);
   },
 

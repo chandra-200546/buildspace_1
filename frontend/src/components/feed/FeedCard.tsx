@@ -19,6 +19,11 @@ export function FeedCard({ post, onAction }: Props) {
   const [commentText, setCommentText] = useState("");
   const [viewCount, setViewCount] = useState(post.views ?? post._count.views ?? 0);
   const [aiLoading, setAiLoading] = useState(false);
+  const [liked, setLiked] = useState(Boolean(post.viewer?.liked));
+  const [disliked, setDisliked] = useState(Boolean(post.viewer?.disliked));
+  const [bookmarked, setBookmarked] = useState(Boolean(post.viewer?.bookmarked));
+  const [reposted, setReposted] = useState(Boolean(post.viewer?.reposted));
+  const [commented, setCommented] = useState(Boolean(post.viewer?.commented));
   const countedViewRef = useRef(false);
 
   useEffect(() => {
@@ -38,6 +43,8 @@ export function FeedCard({ post, onAction }: Props) {
     if (!commentText.trim()) return;
     await addCommentToPost(post.id, commentText.trim());
     setCommentText("");
+    setCommented(true);
+    setShowComments(true);
     onAction();
   };
 
@@ -128,25 +135,68 @@ export function FeedCard({ post, onAction }: Props) {
       )}
 
       <div className="mt-4 flex items-center gap-4 text-xs text-muted">
-        <button className="flex items-center gap-1 hover:text-red-300" onClick={() => action(() => likePost(post.id))}>
+        <button
+          className={`flex items-center gap-1 rounded-full px-2 py-1 transition ${liked ? "bg-red-500/20 text-red-300" : "hover:bg-zinc-800 hover:text-red-300"}`}
+          onClick={() =>
+            action(async () => {
+              await likePost(post.id);
+              setLiked(true);
+              setDisliked(false);
+            })
+          }
+        >
           <Heart className="h-4 w-4" /> {post._count.likes}
         </button>
-        <button className="flex items-center gap-1 hover:text-rose-200" onClick={() => action(() => dislikePost(post.id))}>
+        <button
+          className={`flex items-center gap-1 rounded-full px-2 py-1 transition ${disliked ? "bg-rose-500/20 text-rose-200" : "hover:bg-zinc-800 hover:text-rose-200"}`}
+          onClick={() =>
+            action(async () => {
+              await dislikePost(post.id);
+              setDisliked(true);
+              setLiked(false);
+            })
+          }
+        >
           <ThumbsDown className="h-4 w-4" /> {post._count.dislikes ?? 0}
         </button>
-        <button className="flex items-center gap-1 hover:text-zinc-100" onClick={() => setShowComments((value) => !value)}>
+        <button
+          className={`flex items-center gap-1 rounded-full px-2 py-1 transition ${showComments || commented ? "bg-zinc-700/60 text-zinc-100" : "hover:bg-zinc-800 hover:text-zinc-100"}`}
+          onClick={() => setShowComments((value) => !value)}
+        >
           <MessageCircle className="h-4 w-4" /> {post._count.comments}
         </button>
-        <button className="flex items-center gap-1 hover:text-cyan-300" onClick={() => action(() => repostPost(post.id))}>
+        <button
+          className={`flex items-center gap-1 rounded-full px-2 py-1 transition ${reposted ? "bg-cyan-500/20 text-cyan-300" : "hover:bg-zinc-800 hover:text-cyan-300"}`}
+          onClick={() =>
+            action(async () => {
+              await repostPost(post.id);
+              setReposted(true);
+            })
+          }
+        >
           <GitFork className="h-4 w-4" /> {post._count.reposts}
         </button>
-        <button className="flex items-center gap-1 hover:text-amber-300" onClick={() => action(() => bookmarkPost(post.id))}>
+        <button
+          className={`flex items-center gap-1 rounded-full px-2 py-1 transition ${bookmarked ? "bg-amber-500/20 text-amber-300" : "hover:bg-zinc-800 hover:text-amber-300"}`}
+          onClick={() =>
+            action(async () => {
+              await bookmarkPost(post.id);
+              setBookmarked(true);
+            })
+          }
+        >
           <Bookmark className="h-4 w-4" /> {post._count.bookmarks}
         </button>
         <span className="flex items-center gap-1">
           <Eye className="h-4 w-4" /> {viewCount}
         </span>
-        <button className="ml-auto flex items-center gap-1 hover:text-emerald-300" onClick={runAiReview} disabled={aiLoading}>
+        <button
+          className={`ml-auto flex items-center gap-1 rounded-full px-2 py-1 transition ${
+            post.aiReview ? "bg-emerald-500/20 text-emerald-300" : "hover:bg-zinc-800 hover:text-emerald-300"
+          }`}
+          onClick={runAiReview}
+          disabled={aiLoading}
+        >
           <Bot className="h-4 w-4" /> {aiLoading ? "Reviewing..." : "AI Review"}
         </button>
         {(post.githubUrl || post.liveDemoUrl) && <ExternalLink className="h-4 w-4" />}

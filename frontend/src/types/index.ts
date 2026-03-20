@@ -67,6 +67,13 @@ export type Post = {
     createdAt: string;
     author: UserLite;
   }>;
+  viewer?: {
+    liked: boolean;
+    disliked: boolean;
+    bookmarked: boolean;
+    reposted: boolean;
+    commented: boolean;
+  };
   createdAt: string;
   author: UserLite;
   project?: Pick<Project, "id" | "title" | "slug" | "status" | "tags" | "score">;
