@@ -28,6 +28,12 @@ export async function createPost(payload: Record<string, unknown>) {
   return data;
 }
 
+export async function updatePost(postId: string, payload: Record<string, unknown>) {
+  if (useLocalDb) return localDbApi.updatePost(postId, payload);
+  const { data } = await api.patch<Post>(`/api/feed/${postId}`, payload);
+  return data;
+}
+
 export async function likePost(postId: string) {
   if (useLocalDb) return localDbApi.likePost(postId);
   await api.post(`/api/feed/${postId}/like`);
@@ -230,6 +236,12 @@ export async function createProject(payload: Record<string, unknown>) {
 export async function createProjectUpdate(projectId: string, payload: Record<string, unknown>) {
   if (useLocalDb) return localDbApi.createProjectUpdate(projectId, payload);
   const { data } = await api.post(`/api/projects/${projectId}/updates`, payload);
+  return data;
+}
+
+export async function getProjectTimeline(projectId: string) {
+  if (useLocalDb) return localDbApi.getProjectTimeline(projectId);
+  const { data } = await api.get(`/api/projects/${projectId}/timeline`);
   return data;
 }
 

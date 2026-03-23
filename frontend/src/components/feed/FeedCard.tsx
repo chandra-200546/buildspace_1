@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Bookmark, Bot, ExternalLink, Eye, GitFork, Heart, MessageCircle, ThumbsDown } from "lucide-react";
+import { Bookmark, Bot, ExternalLink, Eye, GitFork, Heart, MessageCircle, Pencil, ThumbsDown, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Post } from "../../types";
-import { addCommentToPost, bookmarkPost, dislikePost, likePost, registerPostView, repostPost, runPostAiReview } from "../../services/api";
+import { addCommentToPost, bookmarkPost, dislikePost, likePost, registerPostView, repostPost, runPostAiReview, updatePost } from "../../services/api";
 import { Avatar } from "../common/Avatar";
 
 type Props = {
@@ -25,7 +25,22 @@ export function FeedCard({ post, onAction }: Props) {
   const [bookmarked, setBookmarked] = useState(Boolean(post.viewer?.bookmarked));
   const [reposted, setReposted] = useState(Boolean(post.viewer?.reposted));
   const [commented, setCommented] = useState(Boolean(post.viewer?.commented));
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(post.text);
+  const [editTechStack, setEditTechStack] = useState((post.techStack ?? []).join(", "));
+  const [editHashtags, setEditHashtags] = useState((post.hashtags ?? []).join(", "));
+  const [savingEdit, setSavingEdit] = useState(false);
   const countedViewRef = useRef(false);
+  const currentUserId = (() => {
+    const raw = localStorage.getItem("buildspace_user");
+    if (!raw) return "";
+    try {
+      return JSON.parse(raw)?.id ?? "";
+    } catch {
+      return "";
+    }
+  })();
+  const isOwner = Boolean(currentUserId && post.author.id === currentUserId);
 
   useEffect(() => {
     if (countedViewRef.current) return;
@@ -61,6 +76,28 @@ export function FeedCard({ post, onAction }: Props) {
 
   const mediaItems = (post.media ?? []).slice(0, 4);
 
+  const saveEdit = async () => {
+    if (!editText.trim()) return;
+    setSavingEdit(true);
+    try {
+      await updatePost(post.id, {
+        text: editText.trim(),
+        techStack: editTechStack
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        hashtags: editHashtags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      });
+      setIsEditing(false);
+      onAction();
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   return (
     <article className="panel p-4 transition hover:border-zinc-700">
       <div className="flex items-start justify-between gap-2">
@@ -73,12 +110,50 @@ export function FeedCard({ post, onAction }: Props) {
             <p className="text-xs text-muted">@{post.author.username}</p>
           </div>
         </div>
-        <span className="rounded-full border border-border px-2 py-1 text-[10px] uppercase tracking-wide text-accent">
-          {post.type.replace("_", " ")}
-        </span>
+        <div className="flex items-center gap-2">
+          {isOwner && !isEditing && (
+            <button className="rounded-full border border-border px-2 py-1 text-[10px] text-zinc-200 hover:bg-zinc-900" onClick={() => setIsEditing(true)}>
+              <span className="inline-flex items-center gap-1">
+                <Pencil className="h-3 w-3" /> Edit
+              </span>
+            </button>
+          )}
+          <span className="rounded-full border border-border px-2 py-1 text-[10px] uppercase tracking-wide text-accent">
+            {post.type.replace("_", " ")}
+          </span>
+        </div>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-zinc-200">{post.text}</p>
+      {isEditing ? (
+        <div className="mt-3 space-y-2 rounded-xl border border-border p-3">
+          <textarea className="input min-h-24 resize-none" value={editText} onChange={(event) => setEditText(event.target.value)} />
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input className="input" value={editTechStack} onChange={(event) => setEditTechStack(event.target.value)} placeholder="Tech stack tags" />
+            <input className="input" value={editHashtags} onChange={(event) => setEditHashtags(event.target.value)} placeholder="Hashtags" />
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              className="btn-secondary"
+              onClick={() => {
+                setIsEditing(false);
+                setEditText(post.text);
+                setEditTechStack((post.techStack ?? []).join(", "));
+                setEditHashtags((post.hashtags ?? []).join(", "));
+              }}
+              disabled={savingEdit}
+            >
+              <span className="inline-flex items-center gap-1">
+                <X className="h-3 w-3" /> Cancel
+              </span>
+            </button>
+            <button className="btn-primary" onClick={saveEdit} disabled={savingEdit || !editText.trim()}>
+              {savingEdit ? "Updating..." : "Update"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-3 text-sm leading-relaxed text-zinc-200">{post.text}</p>
+      )}
 
       {Boolean(mediaItems.length) && (
         <div className={`mt-3 grid gap-2 ${mediaItems.length === 1 ? "grid-cols-1" : "sm:grid-cols-2"}`}>
@@ -108,6 +183,11 @@ export function FeedCard({ post, onAction }: Props) {
         <p className="mt-2 text-xs text-emerald-300">
           Reach potential: {post.matchedAudienceCount} matching developers
           {post.matchedAudienceUsernames?.length ? ` (e.g. ${post.matchedAudienceUsernames.map((u) => `@${u}`).join(", ")})` : ""}
+        </p>
+      )}
+      {typeof post.trendingScore === "number" && post.trendingScore > 0 && (
+        <p className="mt-2 inline-flex rounded-full border border-amber-700/50 bg-amber-900/20 px-2 py-1 text-[11px] text-amber-300">
+          Trending score: {post.trendingScore}
         </p>
       )}
 

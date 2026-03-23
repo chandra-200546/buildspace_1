@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { EmptyState } from "../components/common/EmptyState";
 import { PageTitle } from "../components/common/PageTitle";
-import api, { createProjectUpdate } from "../services/api";
+import { createProjectUpdate, getProjectTimeline } from "../services/api";
 import type { ProjectUpdate } from "../types";
 
 export function ProjectTimelinePage() {
@@ -11,9 +11,10 @@ export function ProjectTimelinePage() {
   const [dayLabel, setDayLabel] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
 
   async function load() {
-    const { data } = await api.get<ProjectUpdate[]>(`/api/projects/${projectId}/timeline`);
+    const data = await getProjectTimeline(projectId);
     setUpdates(data);
   }
 
@@ -23,8 +24,15 @@ export function ProjectTimelinePage() {
   }, [projectId]);
 
   async function submit() {
+    if (!dayLabel.trim() || !title.trim() || !description.trim()) {
+      setError("Day label, title, and description are required.");
+      return;
+    }
     await createProjectUpdate(projectId, { dayLabel, title, description, media: [] });
+    setDayLabel("");
+    setTitle("");
     setDescription("");
+    setError("");
     load();
   }
 
@@ -41,6 +49,7 @@ export function ProjectTimelinePage() {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What did you ship today?"
         />
+        {error && <p className="text-xs text-red-400 md:col-span-3">{error}</p>}
       </section>
 
       {updates.length === 0 ? (

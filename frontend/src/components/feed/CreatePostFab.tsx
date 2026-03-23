@@ -1,5 +1,5 @@
 import { Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPost } from "../../services/api";
 
@@ -27,6 +27,50 @@ export function CreatePostFab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const draftKey = useMemo(() => {
+    const raw = localStorage.getItem("buildspace_user");
+    if (!raw) return "buildspace_post_draft_guest";
+    try {
+      const session = JSON.parse(raw);
+      return `buildspace_post_draft_${session?.id ?? "guest"}`;
+    } catch {
+      return "buildspace_post_draft_guest";
+    }
+  }, []);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(draftKey);
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw);
+      if (draft?.text) setText(String(draft.text));
+      if (draft?.projectTitle) setProjectTitle(String(draft.projectTitle));
+      if (draft?.techStack) setTechStack(String(draft.techStack));
+      if (draft?.hashtags) setHashtags(String(draft.hashtags));
+      if (Array.isArray(draft?.media)) setMedia(draft.media.slice(0, 6));
+    } catch {
+      localStorage.removeItem(draftKey);
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    const hasContent = text.trim() || projectTitle.trim() || techStack.trim() || hashtags.trim() || media.length > 0;
+    if (!hasContent) {
+      localStorage.removeItem(draftKey);
+      return;
+    }
+
+    localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        text,
+        projectTitle,
+        techStack,
+        hashtags,
+        media
+      })
+    );
+  }, [draftKey, hashtags, media, projectTitle, techStack, text]);
 
   const reset = () => {
     setText("");
@@ -34,6 +78,7 @@ export function CreatePostFab() {
     setTechStack("");
     setHashtags("");
     setMedia([]);
+    localStorage.removeItem(draftKey);
   };
 
   const submit = async () => {
@@ -96,6 +141,7 @@ export function CreatePostFab() {
                 <X className="h-4 w-4" />
               </button>
             </div>
+            <p className="mb-3 text-xs text-muted">Draft auto-saves locally.</p>
 
             <textarea
               className="input min-h-28 resize-none"

@@ -60,7 +60,9 @@ export type Post = {
   matchedAudienceUsernames?: string[];
   aiReview?: string;
   aiScore?: number;
+  trendingScore?: number;
   views?: number;
+  updatedAt?: string;
   comments?: Array<{
     id: string;
     text: string;

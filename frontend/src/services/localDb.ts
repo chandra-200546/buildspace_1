@@ -52,6 +52,7 @@ type LocalPost = {
   aiReview?: string;
   aiScore?: number;
   createdAt: string;
+  updatedAt?: string;
   views: number;
   likes: string[];
   dislikes: string[];
@@ -197,6 +198,7 @@ function ensureDbShape(input: any): LocalDb {
         aiReview: entry?.aiReview,
         aiScore: typeof entry?.aiScore === "number" ? entry.aiScore : undefined,
         createdAt: entry?.createdAt ?? nowIso(),
+        updatedAt: entry?.updatedAt ?? entry?.createdAt ?? nowIso(),
         views: Number(entry?.views ?? 0),
         likes: Array.isArray(entry?.likes) ? entry.likes : [],
         dislikes: Array.isArray(entry?.dislikes) ? entry.dislikes : [],
@@ -309,6 +311,16 @@ function computeAudienceMatch(hashtags: string[], authorId: string, db: LocalDb)
   };
 }
 
+function computeTrendingScore(post: LocalPost) {
+  const likes = post.likes.length * 3;
+  const comments = (post.comments?.length ?? 0) * 4;
+  const reposts = (post.repostedBy?.length ?? post.reposts ?? 0) * 5;
+  const views = Math.floor((post.views ?? 0) / 10);
+  const ageHours = Math.max(1, (Date.now() - +new Date(post.createdAt)) / (1000 * 60 * 60));
+  const decay = Math.min(2.5, ageHours / 18);
+  return Math.max(0, Math.round((likes + comments + reposts + views) / decay));
+}
+
 function mapPost(post: LocalPost, db: LocalDb): Post {
   const author = withUser(post.authorId, db);
   if (!author) throw new Error("Post author not found");
@@ -351,6 +363,7 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
     ...computeAudienceMatch(post.hashtags ?? [], post.authorId, db),
     aiReview: post.aiReview,
     aiScore: post.aiScore,
+    trendingScore: computeTrendingScore(post),
     views: post.views ?? 0,
     comments: mappedComments,
     viewer: {
@@ -361,6 +374,7 @@ function mapPost(post: LocalPost, db: LocalDb): Post {
       commented: Boolean(viewerId && (post.comments ?? []).some((entry) => entry.authorId === viewerId))
     },
     createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
     author: { id: author.id, name: author.name, username: author.username, image: author.image },
     project: project
       ? {
@@ -465,7 +479,7 @@ export const localDbApi = {
   getFeed(filter: string, page = 1, limit = 10) {
     const db = readDb();
     let posts = [...db.posts];
-    if (filter === "trending") posts.sort((a, b) => b.likes.length - a.likes.length);
+    if (filter === "trending") posts.sort((a, b) => computeTrendingScore(b) - computeTrendingScore(a));
     else posts.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 
     const start = (page - 1) * limit;
@@ -498,6 +512,7 @@ export const localDbApi = {
       aiReview: undefined,
       aiScore: undefined,
       createdAt: nowIso(),
+      updatedAt: nowIso(),
       views: 0,
       likes: [],
       dislikes: [],
@@ -509,6 +524,43 @@ export const localDbApi = {
 
     db.posts.unshift(post);
     post.hashtags.forEach((tag) => upsertTag(db, tag));
+    writeDb(db);
+    return mapPost(post, db);
+  },
+
+  updatePost(postId: string, payload: any) {
+    const db = readDb();
+    const user = requireSessionUser(db);
+    const post = db.posts.find((entry) => entry.id === postId);
+    if (!post) throw new Error("Post not found");
+    if (post.authorId !== user.id) throw new Error("You can only update your own post.");
+
+    const nextText = String(payload?.text ?? post.text).trim();
+    if (!nextText) throw new Error("Post text is required.");
+
+    const nextTechStack = Array.isArray(payload?.techStack)
+      ? payload.techStack.map((tag: string) => String(tag).trim()).filter(Boolean)
+      : post.techStack;
+    const nextMedia = Array.isArray(payload?.media) ? payload.media : post.media;
+
+    const fromText = extractHashtagsFromText(nextText);
+    const fromTechStack = nextTechStack.map((tag: string) => normalizeHashtag(tag));
+    const fromInput = Array.isArray(payload?.hashtags)
+      ? payload.hashtags.map((tag: string) => normalizeHashtag(tag))
+      : post.hashtags;
+    const hashtags = uniqueValues([...fromText, ...fromTechStack, ...fromInput]);
+
+    post.text = nextText;
+    post.techStack = nextTechStack;
+    post.media = nextMedia;
+    post.projectTitle = payload?.projectTitle ?? post.projectTitle;
+    post.githubUrl = payload?.githubUrl ?? post.githubUrl;
+    post.liveDemoUrl = payload?.liveDemoUrl ?? post.liveDemoUrl;
+    post.projectStage = payload?.projectStage ?? post.projectStage;
+    post.hashtags = hashtags;
+    post.updatedAt = nowIso();
+
+    hashtags.forEach((tag) => upsertTag(db, tag));
     writeDb(db);
     return mapPost(post, db);
   },
@@ -696,6 +748,13 @@ export const localDbApi = {
     if (!mappedProject) throw new Error("Project data is invalid");
     const relatedPosts = db.posts.filter((entry) => entry.projectId === project.id).map((entry) => mapPost(entry, db));
     return { ...mappedProject, posts: relatedPosts, aiReviews: project.aiReviews || [] };
+  },
+
+  getProjectTimeline(projectId: string) {
+    const db = readDb();
+    const project = db.projects.find((entry) => entry.id === projectId);
+    if (!project) return [];
+    return [...(project.updates ?? [])].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
   },
 
   getChallenges() {
