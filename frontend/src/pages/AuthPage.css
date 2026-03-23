@@ -203,10 +203,34 @@
 
 .authv2-fiveu-logo-image {
   width: 100%;
-  max-height: 88px;
+  max-height: 92px;
   object-fit: contain;
   border-radius: 10px;
   display: block;
+  background: rgba(2, 7, 20, 0.8);
+}
+
+.authv2-logo-upload {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  color: #b9c8f4;
+  border: 1px solid rgba(124, 160, 255, 0.4);
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  cursor: pointer;
+  background: rgba(10, 17, 36, 0.8);
+}
+
+.authv2-logo-upload:hover {
+  border-color: rgba(139, 197, 255, 0.72);
+  color: #e3ebff;
+}
+
+.authv2-logo-upload input {
+  display: none;
 }
 
 .authv2-fiveu-v {
