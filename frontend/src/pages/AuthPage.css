@@ -233,6 +233,12 @@
   display: none;
 }
 
+.authv2-logo-missing {
+  margin: 0.42rem 0 0;
+  color: #ffd39a;
+  font-size: 0.67rem;
+}
+
 .authv2-fiveu-v {
   font-size: 1.7rem;
   font-weight: 700;

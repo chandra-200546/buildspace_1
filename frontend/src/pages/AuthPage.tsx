@@ -5,7 +5,16 @@ import { login, register } from "../services/api";
 import { useSession } from "../hooks/useSession";
 import "./AuthPage.css";
 
-const LOGO_CANDIDATES = ["/fiveu-logo.jpg", "/fiveu-logo.png", "/fiveu-logo.jpeg", "/fiveu-logo.webp"];
+const LOGO_CANDIDATES = [
+  "/fiveu-logo.jpg",
+  "/fiveu-logo.jpeg",
+  "/fiveu-logo.png",
+  "/fiveu-logo.webp",
+  "/FiveU-logo.jpg",
+  "/FiveU-logo.png",
+  "/fiveu.jpg",
+  "/logo.jpg"
+];
 
 export function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -27,6 +36,7 @@ export function AuthPage() {
   const [showGreeting, setShowGreeting] = useState(true);
   const [logoIndex, setLogoIndex] = useState(0);
   const [customLogo, setCustomLogo] = useState("");
+  const [logoMissing, setLogoMissing] = useState(false);
   const nav = useNavigate();
   const { saveSession } = useSession();
 
@@ -203,11 +213,22 @@ export function AuthPage() {
                     setCustomLogo("");
                     localStorage.removeItem("buildspace_company_logo");
                     setLogoIndex(0);
+                    setLogoMissing(false);
                     return;
                   }
-                  setLogoIndex((value) => (value + 1 < LOGO_CANDIDATES.length ? value + 1 : value));
+                  setLogoIndex((value) => {
+                    const next = value + 1;
+                    if (next >= LOGO_CANDIDATES.length) {
+                      setLogoMissing(true);
+                      return value;
+                    }
+                    return next;
+                  });
                 }}
               />
+              {logoMissing && (
+                <p className="authv2-logo-missing">Logo file not found. Add `fiveu-logo.jpg` in `frontend/public`.</p>
+              )}
               <label className="authv2-logo-upload">
                 Use company logo
                 <input
@@ -221,6 +242,7 @@ export function AuthPage() {
                       const dataUrl = String(reader.result ?? "");
                       setCustomLogo(dataUrl);
                       localStorage.setItem("buildspace_company_logo", dataUrl);
+                      setLogoMissing(false);
                     };
                     reader.readAsDataURL(file);
                     event.target.value = "";
