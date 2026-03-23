@@ -1038,9 +1038,38 @@ export const localDbApi = {
   sendCollabRequest(payload: any) {
     const db = readDb();
     const requester = requireSessionUser(db);
+    if (!payload?.projectId || !payload?.recipientId || !payload?.roleNeeded) {
+      throw new Error("Project, recipient, and role are required.");
+    }
+    if (payload.recipientId === requester.id) {
+      throw new Error("You cannot send a collaboration request to yourself.");
+    }
+    const duplicate = db.collabRequests.find(
+      (entry) =>
+        entry.projectId === payload.projectId &&
+        entry.requesterId === requester.id &&
+        entry.recipientId === payload.recipientId &&
+        entry.roleNeeded === payload.roleNeeded &&
+        entry.status === "OPEN"
+    );
+    if (duplicate) {
+      return duplicate;
+    }
+
     const request = { id: id("col"), ...payload, requesterId: requester.id, status: "OPEN", createdAt: nowIso() };
     db.collabRequests.unshift(request);
+    addNotification(db, {
+      userId: payload.recipientId,
+      actorId: requester.id,
+      type: "COLLAB",
+      title: "Build Together request",
+      message: `${requester.name} requested to collaborate as ${payload.roleNeeded}.`,
+      link: `/collaborate`,
+      entityId: request.id,
+      dedupeKey: `collab:${payload.projectId}:${payload.recipientId}:${requester.id}:${payload.roleNeeded}`
+    });
     writeDb(db);
+    emitNotificationsChanged();
     return request;
   },
 
