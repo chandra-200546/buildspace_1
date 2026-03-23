@@ -169,8 +169,17 @@ export function AuthPage() {
 
         <div className="authv2-scene">
           <aside className="authv2-anime-zone" aria-hidden="true">
-            <div className="authv2-anime-slot">
-              <p>Replace with your PNG later</p>
+            <div className="authv2-fiveu-brand">
+              <div className="authv2-fiveu-logo">
+                <span className="authv2-fiveu-v">V</span>
+                <div className="authv2-fiveu-wordmark">
+                  <p className="authv2-fiveu-name">
+                    Five<span>U</span>
+                  </p>
+                  <p className="authv2-fiveu-sub">TECHNOLOGIES PVT LTD</p>
+                </div>
+              </div>
+              <p className="authv2-fiveu-tag">A FiveU Product</p>
             </div>
             <div className="authv2-anime-figure">
               <div className="authv2-anime-shadow" />
@@ -193,7 +202,7 @@ export function AuthPage() {
               <section className="authv2-face authv2-face-login">
                 <h3>Welcome Back</h3>
                 <p>Login and continue building in public.</p>
-                <form onSubmit={submit} noValidate>
+                <form onSubmit={submit} noValidate className="authv2-form">
                   <label>Email</label>
                   <input
                     className="authv2-input"
@@ -230,7 +239,7 @@ export function AuthPage() {
               <section className="authv2-face authv2-face-signup">
                 <h3>Create Account</h3>
                 <p>Build your developer identity with projects.</p>
-                <form onSubmit={submit} noValidate>
+                <form onSubmit={submit} noValidate className="authv2-form">
                   <label>Full Name</label>
                   <input
                     className="authv2-input"
