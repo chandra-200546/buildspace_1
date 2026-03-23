@@ -22,6 +22,7 @@ export function AuthPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(true);
   const nav = useNavigate();
   const { saveSession } = useSession();
 
@@ -50,6 +51,20 @@ export function AuthPage() {
       setSignupUsername(suggested);
     }
   }, [mode, signupName, signupUsername]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setShowGreeting(true);
+      window.setTimeout(() => setShowGreeting(false), 1800);
+    }, 5000);
+
+    const initialHide = window.setTimeout(() => setShowGreeting(false), 1800);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(initialHide);
+    };
+  }, []);
 
   function switchMode(nextMode: "login" | "signup") {
     if (nextMode === mode) return;
@@ -170,18 +185,11 @@ export function AuthPage() {
         <div className="authv2-scene">
           <aside className="authv2-anime-zone" aria-hidden="true">
             <div className="authv2-fiveu-brand">
-              <div className="authv2-fiveu-logo">
-                <span className="authv2-fiveu-v">V</span>
-                <div className="authv2-fiveu-wordmark">
-                  <p className="authv2-fiveu-name">
-                    Five<span>U</span>
-                  </p>
-                  <p className="authv2-fiveu-sub">TECHNOLOGIES PVT LTD</p>
-                </div>
-              </div>
+              <img src="/fiveu-logo.jpg" alt="FiveU Technologies Pvt Ltd" className="authv2-fiveu-logo-image" />
               <p className="authv2-fiveu-tag">A FiveU Product</p>
             </div>
-            <div className="authv2-anime-figure">
+            <div className={`authv2-anime-figure ${showGreeting ? "greeting" : ""}`}>
+              <p className={`authv2-greet-bubble ${showGreeting ? "visible" : ""}`}>WELCOME</p>
               <div className="authv2-anime-shadow" />
               <div className="authv2-anime-head">
                 <span className="authv2-anime-eye left" />
