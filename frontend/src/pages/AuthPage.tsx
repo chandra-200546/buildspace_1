@@ -36,7 +36,7 @@ export function AuthPage() {
   const [showGreeting, setShowGreeting] = useState(true);
   const [logoIndex, setLogoIndex] = useState(0);
   const [customLogo, setCustomLogo] = useState("");
-  const [logoMissing, setLogoMissing] = useState(false);
+  const [logoResolved, setLogoResolved] = useState(true);
   const nav = useNavigate();
   const { saveSession } = useSession();
 
@@ -204,30 +204,31 @@ export function AuthPage() {
         <div className="authv2-scene">
           <aside className="authv2-anime-zone" aria-hidden="true">
             <div className="authv2-fiveu-brand">
-              <img
-                src={customLogo || LOGO_CANDIDATES[logoIndex]}
-                alt="FiveU Technologies Pvt Ltd"
-                className="authv2-fiveu-logo-image"
-                onError={() => {
-                  if (customLogo) {
-                    setCustomLogo("");
-                    localStorage.removeItem("buildspace_company_logo");
-                    setLogoIndex(0);
-                    setLogoMissing(false);
-                    return;
-                  }
-                  setLogoIndex((value) => {
-                    const next = value + 1;
-                    if (next >= LOGO_CANDIDATES.length) {
-                      setLogoMissing(true);
-                      return value;
+              {logoResolved ? (
+                <img
+                  src={customLogo || LOGO_CANDIDATES[logoIndex]}
+                  alt="FiveU Technologies Pvt Ltd"
+                  className="authv2-fiveu-logo-image"
+                  onLoad={() => setLogoResolved(true)}
+                  onError={() => {
+                    if (customLogo) {
+                      setCustomLogo("");
+                      localStorage.removeItem("buildspace_company_logo");
+                      setLogoIndex(0);
+                      return;
                     }
-                    return next;
-                  });
-                }}
-              />
-              {logoMissing && (
-                <p className="authv2-logo-missing">Logo file not found. Add `fiveu-logo.jpg` in `frontend/public`.</p>
+                    setLogoIndex((value) => {
+                      const next = value + 1;
+                      if (next >= LOGO_CANDIDATES.length) {
+                        setLogoResolved(false);
+                        return value;
+                      }
+                      return next;
+                    });
+                  }}
+                />
+              ) : (
+                <div className="authv2-fiveu-logo-placeholder" />
               )}
               <label className="authv2-logo-upload">
                 Use company logo
@@ -242,7 +243,7 @@ export function AuthPage() {
                       const dataUrl = String(reader.result ?? "");
                       setCustomLogo(dataUrl);
                       localStorage.setItem("buildspace_company_logo", dataUrl);
-                      setLogoMissing(false);
+                      setLogoResolved(true);
                     };
                     reader.readAsDataURL(file);
                     event.target.value = "";
