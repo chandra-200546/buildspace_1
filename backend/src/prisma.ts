@@ -1,8 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 
+const defaultLocalDatabaseUrl = "postgresql://postgres:postgres@localhost:5432/buildspace_ai?schema=public";
+
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "Missing DATABASE_URL. Create backend/.env from backend/.env.example and set your Neon/PostgreSQL connection string."
+  process.env.DATABASE_URL = defaultLocalDatabaseUrl;
+  console.warn(
+    "DATABASE_URL was not set. Falling back to local PostgreSQL default: postgresql://postgres:postgres@localhost:5432/buildspace_ai?schema=public"
   );
 }
 
