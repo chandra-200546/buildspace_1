@@ -5,17 +5,6 @@ import { login, register } from "../services/api";
 import { useSession } from "../hooks/useSession";
 import "./AuthPage.css";
 
-const LOGO_CANDIDATES = [
-  "/fiveu-logo.jpg",
-  "/fiveu-logo.jpeg",
-  "/fiveu-logo.png",
-  "/fiveu-logo.webp",
-  "/FiveU-logo.jpg",
-  "/FiveU-logo.png",
-  "/fiveu.jpg",
-  "/logo.jpg"
-];
-
 export function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [isSwitching, setIsSwitching] = useState(false);
@@ -34,9 +23,6 @@ export function AuthPage() {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
-  const [logoIndex, setLogoIndex] = useState(0);
-  const [customLogo, setCustomLogo] = useState("");
-  const [logoResolved, setLogoResolved] = useState(true);
   const nav = useNavigate();
   const { saveSession } = useSession();
 
@@ -78,11 +64,6 @@ export function AuthPage() {
       window.clearInterval(intervalId);
       window.clearTimeout(initialHide);
     };
-  }, []);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("buildspace_company_logo");
-    if (saved) setCustomLogo(saved);
   }, []);
 
   function switchMode(nextMode: "login" | "signup") {
@@ -204,52 +185,8 @@ export function AuthPage() {
         <div className="authv2-scene">
           <aside className="authv2-anime-zone" aria-hidden="true">
             <div className="authv2-fiveu-brand">
-              {logoResolved ? (
-                <img
-                  src={customLogo || LOGO_CANDIDATES[logoIndex]}
-                  alt="FiveU Technologies Pvt Ltd"
-                  className="authv2-fiveu-logo-image"
-                  onLoad={() => setLogoResolved(true)}
-                  onError={() => {
-                    if (customLogo) {
-                      setCustomLogo("");
-                      localStorage.removeItem("buildspace_company_logo");
-                      setLogoIndex(0);
-                      return;
-                    }
-                    setLogoIndex((value) => {
-                      const next = value + 1;
-                      if (next >= LOGO_CANDIDATES.length) {
-                        setLogoResolved(false);
-                        return value;
-                      }
-                      return next;
-                    });
-                  }}
-                />
-              ) : (
-                <div className="authv2-fiveu-logo-placeholder" />
-              )}
-              <label className="authv2-logo-upload">
-                Use company logo
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const dataUrl = String(reader.result ?? "");
-                      setCustomLogo(dataUrl);
-                      localStorage.setItem("buildspace_company_logo", dataUrl);
-                      setLogoResolved(true);
-                    };
-                    reader.readAsDataURL(file);
-                    event.target.value = "";
-                  }}
-                />
-              </label>
+              <img src="/fiveu-logo.jpg" alt="FiveU Technologies Pvt Ltd" className="authv2-fiveu-logo-image" />
+              <p className="authv2-company-logo-text">Company Logo</p>
               <p className="authv2-fiveu-tag">A FiveU Product</p>
             </div>
             <div className={`authv2-anime-figure ${showGreeting ? "greeting" : ""}`}>
