@@ -181,6 +181,8 @@
   background: linear-gradient(160deg, rgba(22, 31, 62, 0.8), rgba(10, 14, 31, 0.82));
   overflow: hidden;
   padding: 0.8rem;
+  perspective: 1200px;
+  perspective-origin: center 75%;
 }
 
 .authv2-fiveu-brand {
@@ -263,6 +265,7 @@
   transform-origin: center bottom;
   animation: authv2-idle 4.2s ease-in-out infinite;
   transition: transform 0.72s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
 }
 
 .authv2-greet-bubble {
@@ -299,11 +302,11 @@
 }
 
 .authv2-shell.is-switching .authv2-anime-figure {
-  transform: translateX(10px) rotate(-6deg);
+  transform: translateX(10px) rotateY(-16deg) rotate(-6deg);
 }
 
 .authv2-shell.mode-signup .authv2-anime-figure {
-  transform: translateX(22px) rotate(4deg);
+  transform: translateX(22px) rotateY(12deg) rotate(4deg);
 }
 
 .authv2-anime-shadow {
@@ -324,7 +327,9 @@
   width: 68px;
   height: 72px;
   border-radius: 44% 44% 48% 48%;
-  background: #f2cbbc;
+  background: linear-gradient(135deg, #ffd9ca, #dbb0a3);
+  transform: translateZ(30px);
+  box-shadow: inset -6px -8px 12px rgba(120, 80, 70, 0.24), 0 8px 16px rgba(0, 0, 0, 0.28);
 }
 
 .authv2-anime-hair {
@@ -334,7 +339,8 @@
   width: 78px;
   height: 42px;
   border-radius: 50% 50% 40% 38%;
-  background: linear-gradient(120deg, #2a3258, #151a2c);
+  background: linear-gradient(120deg, #37406e, #171d30);
+  transform: translateZ(8px);
 }
 
 .authv2-anime-eye {
@@ -373,6 +379,8 @@
   height: 138px;
   border-radius: 20px;
   background: linear-gradient(150deg, #2d4ea2, #1d3268);
+  transform: translateZ(22px);
+  box-shadow: inset -10px -14px 16px rgba(8, 18, 54, 0.45), inset 10px 8px 12px rgba(83, 128, 255, 0.28);
 }
 
 .authv2-anime-arm,
@@ -386,28 +394,38 @@
   width: 24px;
   height: 94px;
   background: linear-gradient(170deg, #f1c8b4, #d5a596);
+  transform-style: preserve-3d;
+}
+
+.authv2-anime-arm::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(255, 220, 205, 0.5), rgba(140, 90, 74, 0.22));
+  transform: translateZ(6px);
 }
 
 .authv2-anime-arm.left {
   left: 42px;
-  transform: rotate(16deg);
+  transform: rotate(16deg) translateZ(18px);
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .authv2-anime-arm.right {
   right: 40px;
-  transform: rotate(-12deg);
+  transform: rotate(-12deg) translateZ(18px);
   transform-origin: top center;
   animation: authv2-push 2.8s ease-in-out infinite;
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .authv2-anime-figure.greeting .authv2-anime-arm.left {
-  transform: rotate(34deg) translate(15px, 8px);
+  transform: rotate(34deg) translate(15px, 8px) translateZ(24px);
 }
 
 .authv2-anime-figure.greeting .authv2-anime-arm.right {
-  transform: rotate(-34deg) translate(-15px, 8px);
+  transform: rotate(-34deg) translate(-15px, 8px) translateZ(24px);
   animation: none;
 }
 
@@ -426,6 +444,8 @@
   width: 28px;
   height: 95px;
   background: linear-gradient(180deg, #181f3b, #10142a);
+  transform: translateZ(12px);
+  box-shadow: inset -6px -10px 12px rgba(0, 0, 0, 0.35);
 }
 
 .authv2-anime-leg.left {
